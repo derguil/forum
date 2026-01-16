@@ -1,0 +1,110 @@
+/* 카드 전체 */
+.post-card {
+  max-width: 2000px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* 링크 기본 스타일 제거 */
+.post-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+/* 카드 본문: 좌(텍스트) 우(썸네일) */
+.post-body {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+/* 왼쪽 텍스트 영역이 공간 다 차지하게 */
+.post-left {
+  flex: 1;
+  min-width: 0; /* 긴 글 줄바꿈/말줄임 안정 */
+}
+
+/* 제목/내용 정리 */
+.post-title {
+  margin: 0 0 6px 0;
+}
+
+.post-content.preview {
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  line-height: 1.5em;
+  max-height: calc(1.5em * 2);
+
+  white-space: pre-wrap; 
+  word-break: break-word;
+}
+
+
+/* 오른쪽 썸네일 */
+.post-thumb {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+
+/* 아래 메타 정보 줄 */
+.post-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  color: #7a8a91;
+  font-size: 14px;
+}
+
+/* 댓글 배지 */
+.status {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+}
+
+.status .comment {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #5f9ea0;          /* 아이콘 색 */
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* 말풍선 아이콘 */
+.status .comment::before {
+  content: "";
+  width: 16px;
+  height: 16px;
+  background: no-repeat center / contain;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%235f9ea0' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M8 10h8M8 14h4M21 12c0 4.418-4.03 8-9 8a9.77 9.77 0 01-4-.8L3 20l1.2-3A7.8 7.8 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z'/%3E%3C/svg%3E");
+}
+
+/* 시간 */
+.post-time {
+  white-space: nowrap;
+}
+
+/* 작성자 */
+.post-user {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #51646b;
+  white-space: nowrap;
+}

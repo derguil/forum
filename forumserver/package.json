@@ -1,0 +1,29 @@
+{
+  "name": "everytime",
+  "version": "1.0.0",
+  "description": "",
+  "main": "serverProject/server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.962.0",
+    "bcrypt": "^6.0.0",
+    "connect-mongo": "^6.0.0",
+    "connect-redis": "^9.0.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "express-session": "^1.18.2",
+    "mongodb": "^5.9.2",
+    "multer": "^2.0.2",
+    "multer-s3": "^3.0.1",
+    "nodemon": "^3.1.11",
+    "redis": "^5.10.0"
+  }
+}
