@@ -4,7 +4,7 @@ import { Button, Container, Nav, Navbar, Row, Col, ListGroup, NavDropdown, Image
 import accountImg from './../assets/accountImg.svg'
 import chattingImg from './../assets/chattingImg.svg'
 
-function MainNavbar(props){
+function MainNavbar(){
   let navigate = useNavigate()
   return (
     <div>

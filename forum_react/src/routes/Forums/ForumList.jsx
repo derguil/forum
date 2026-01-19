@@ -22,6 +22,10 @@ function ForumList(){
     .catch(() => setUserId(null));
   }, [refresh])
 
+  // useEffect(() => {
+  //   navigate("/forum/6953f66a1ef627a2f54d906c", { replace: true });
+  // }, []);
+
   const isLoggedIn = !!userId;
 
   const [show, setShow] = useState(false);

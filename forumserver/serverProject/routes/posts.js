@@ -30,10 +30,19 @@ const upload = multer({
 
 router.get('/reqPosts', async (req, res) => {
   const db = getDB("forumsData");
-  const forumid = req.query.forumid;
+  const forumid = req.query.forumid
+
+  const currPage = Number(req.query.currPage);
+  const limit = Number(req.query.limit);
+
+  const skip = (currPage - 1) * limit
 
   const posts = await db.collection('posts').aggregate([
     { $match: { parent_id: new ObjectId(forumid) }},
+    { $sort: { wtime: -1 } },
+
+    { $skip: skip },
+    { $limit: limit },
     { $lookup:  //https://www.mongodb.com/ko-kr/docs/manual/reference/operator/aggregation/lookup/
       {
         from: "users",
@@ -55,8 +64,11 @@ router.get('/reqPosts', async (req, res) => {
       }
     }
   ]).toArray();
+  const totalPostsCount = await db.collection('posts').countDocuments(
+    { parent_id: new ObjectId(forumid) }
+  )
 
-  res.send({ success: true, posts: posts });
+  res.send({ success: true, posts: posts, totalPostsCount: totalPostsCount });
 });
 
 router.get('/reqPost', async (req, res) => {
@@ -95,6 +107,14 @@ router.post('/writePost', requireLogin, upload.array("images", 20), async (req, 
   const { parent_id, title, content } = req.body;
   if (!title || !content) {
     return res.status(400).json({ message: "title/content 누락" });
+  }
+
+  const parantForum = await db.collection('forums').findOne({
+    _id: new ObjectId(parent_id)
+  })
+
+  if(!parantForum) {
+    return res.status(500).json({ message: "존재하지 않는 forum!" });
   }
 
   const images = (req.files || []).map(file => ({

@@ -31,7 +31,7 @@ router.post('/addForum', requireLogin, async (req, res) => {
 
   await db.collection('forums').insertOne({
     title: forumName,
-    madeby: new ObjectId(user_id)
+    madeby: new ObjectId(user_id),
   });
   res.send({ success: true });
 });

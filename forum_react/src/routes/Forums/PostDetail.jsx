@@ -42,10 +42,10 @@ export default function PostDetail() {
 
   return (
     <Container fluid>
-      <ForumTitle forumtitle={forum.title} />
       <Row className="justify-content-center">
         <Col xs={12} md={10} lg={8}>
           <div className="postdetail-wrap">
+          <ForumTitle forumtitle={forum.title} isLoggedIn={false}/>
             <Card className="mx-auto">
               <Card.Body>
 

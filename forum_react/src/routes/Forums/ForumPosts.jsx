@@ -1,59 +1,79 @@
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate, Link, Outlet } from 'react-router-dom'
-import { Button, Container, Nav, Navbar, Row, Col, ListGroup, NavDropdown, Image, Card }  from 'react-bootstrap';
+import { useParams, useNavigate, Link, Outlet, useSearchParams } from 'react-router-dom'
+import { Button, Container, Nav, Navbar, Row, Col, ListGroup, NavDropdown, Image, Card, Pagination }  from 'react-bootstrap';
 import axios from 'axios';
 import ForumTitle from './ForumTitle';
 import "./ForumPosts.css"
 
-function ForumDetail() {
+function ForumPosts() {
   const navigate = useNavigate();
 
+  const limit = 10;
   let [forum, setForum] = useState([])
   let [posts, setPosts] = useState([])
+  let [postCount, setPostCount] = useState(0)
   const [loading, setLoading] = useState(true);
   const { forumid } = useParams()
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currPage = Number(searchParams.get("p") || 1);
+
   let [userId, setUserId] = useState(null)
 
   useEffect(() => {
-    Promise.all([
-      axios.get("/api/reqForum", { params: { forumid } }),
-      axios.get("/api/reqPosts", { params: { forumid } }),
-    ])
-    .then(([forumRes, postsRes]) => {
-      setForum(forumRes.data.forum);
-      setPosts(
-        [...postsRes.data.posts].sort(
-          (a, b) => new Date(b.wtime) - new Date(a.wtime)
-        )
-      );
-    })
-    .catch((err) => console.log(err))
-    .finally(() => setLoading(false));
-
-    axios.get("/api/auth/me")
-    .then(res => setUserId(res.data.user))
-    .catch(() => setUserId(null));
+    axios.get("/api/reqForum", { params: { forumid } })
+      .then(res => setForum(res.data.forum))
+      .catch(console.log);
   }, [forumid]);
+
+  useEffect(() => {
+    setLoading(true);
+
+    axios.get("/api/reqPosts", {
+      params: { forumid, currPage, limit }
+    })
+    .then(res => {
+      setPosts(res.data.posts);
+      setPostCount(res.data.totalPostsCount);
+    })
+    .catch(console.log)
+    .finally(() => setLoading(false));
+  }, [forumid, currPage]);
+
+  useEffect(() => {
+    axios.get("/api/auth/me")
+      .then(res => setUserId(res.data.user))
+      .catch(() => setUserId(null));
+  }, []);
+
   const isLoggedIn = !!userId;
   
   if (loading) return <div style={{ padding: '0 15px' }}>로딩중...</div>
   
   return (
-    <div id="container" className='article' style={{ padding: '0 15px' }}>
-      <ForumTitle forumtitle={forum.title}></ForumTitle>
-      {isLoggedIn && <Button onClick={()=>{navigate(`write`)}}>글 작성</Button>}
-      <hr></hr>
-      {posts.length === 0 && <div>게시글을 찾을 수 없습니다.</div>}
-      {
-        posts.map((post, i)=>{  
-          return(
-            <div key={i}>
-              <Post post={post}/>
-            </div>
-          )
-        })
-      }
-    </div>
+    <Container fluid className="ForumPosts-wrap">
+      <Row className="justify-content-center">
+        <Col xs={12} md={10} lg={8}>
+          <div id="container" className='article'>
+            <ForumTitle forumtitle={forum.title} isLoggedIn={isLoggedIn}></ForumTitle>
+            {posts.length === 0 && <div>게시글을 찾을 수 없습니다.</div>}
+            {
+              posts.map((post, i)=>{  
+                return(
+                  <div key={i}>
+                    <Post post={post}/>
+                  </div>
+                )
+              })
+            }
+          </div>
+          <hr></hr>
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <PagiNation postCount={postCount} currPage={currPage} limit={limit}></PagiNation>
+          </div>
+        </Col>
+      </Row>
+    </Container>
   )
 }
 
@@ -104,6 +124,46 @@ function Post({ post }) {
   );
 }
 
+function PagiNation({ postCount, currPage, limit }){
+  const navigate = useNavigate();
+
+  const totalPages = Math.max(1, Math.ceil(postCount / limit));
+  const go = (p) => {
+    if (p < 1 || p > totalPages || p === currPage) return;
+    navigate(`?p=${p}`, { replace: true });
+  }
+
+  return(
+    <Pagination>
+      <Pagination.First
+        disabled={currPage === 1}
+        onClick={() => go(1)}
+      />
+      <Pagination.Prev
+        disabled={currPage === 1}
+        onClick={() => go(currPage - 1)}
+      />
+
+      {(currPage > 3) && <Pagination.Ellipsis disabled/>}
+      {(currPage > 2) && <Pagination.Item onClick={() => go(currPage - 2)}>{currPage - 2}</Pagination.Item>}
+      {(currPage > 1) && <Pagination.Item onClick={() => go(currPage - 1)}>{currPage - 1}</Pagination.Item>}
+      <Pagination.Item active>{currPage}</Pagination.Item>
+      {(currPage < totalPages) && <Pagination.Item onClick={() => go(currPage + 1)}>{currPage + 1}</Pagination.Item>}
+      {(currPage < totalPages - 1) && <Pagination.Item onClick={() => go(currPage + 2)}>{currPage + 2}</Pagination.Item>}
+      {(currPage < (totalPages - 2)) && <Pagination.Ellipsis disabled/>}
+
+      <Pagination.Next
+        disabled={currPage === totalPages}
+        onClick={() => go(currPage + 1)}
+      />
+      <Pagination.Last
+        disabled={currPage === totalPages}
+        onClick={() => go(totalPages)}
+      />
+    </Pagination>
+  )
+}
 
 
-export default ForumDetail
+
+export default ForumPosts
