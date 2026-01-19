@@ -130,7 +130,7 @@ function PagiNation({ postCount, currPage, limit }){
   const totalPages = Math.max(1, Math.ceil(postCount / limit));
   const go = (p) => {
     if (p < 1 || p > totalPages || p === currPage) return;
-    navigate(`?p=${p}`, { replace: true });
+    navigate(`?p=${p}`);
   }
 
   return(
