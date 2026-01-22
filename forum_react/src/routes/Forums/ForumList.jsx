@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link, Outlet, Navigate } from 'react-router-dom'
 import { Button, Container, Nav, Navbar, Row, Col, ListGroup, NavDropdown, Modal, InputGroup, Form  }  from 'react-bootstrap';
 import axios from 'axios';
+import { useSelector } from "react-redux";
 
 function ForumList(){
   let navigate = useNavigate()
   
   let [refresh, setRefresh] = useState(false)
   let [forums, setForums] = useState([])
-  let [userId, setUserId] = useState(null)
 
   useEffect(()=>{
     axios.get("/api/reqForums")
@@ -16,17 +16,10 @@ function ForumList(){
       setForums(res.data.forums)
     })
     .catch((err) => console.log(err));
-
-    axios.get("/api/auth/me")
-    .then(res => setUserId(res.data.user))
-    .catch(() => setUserId(null));
   }, [refresh])
 
-  // useEffect(() => {
-  //   navigate("/forum/6953f66a1ef627a2f54d906c", { replace: true });
-  // }, []);
-
-  const isLoggedIn = !!userId;
+  const authUserId = useSelector(state => state.auth.user?._id);
+  const isLoggedIn = !!authUserId;
 
   const [show, setShow] = useState(false);
 

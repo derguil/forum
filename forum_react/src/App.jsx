@@ -1,9 +1,12 @@
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import axios from "axios";
+import { setUser, clearUser } from "./store/authSlice";
 import { Routes, Route } from 'react-router-dom'
 import './App.css'
+
 import MainNavbar from './routes/MainNavbar'
-
 import HomePage from './routes/HomePage'
-
 import Login from './routes/AccountManage/Login'
 import Register from './routes/AccountManage/Register'
 
@@ -21,6 +24,18 @@ import ChatRoomPanel from './routes/Chattings/ChatRoomPanel'
 
 
 function App() {
+  const dispatch = useDispatch();
+  const loaded = useSelector((state) => state.auth.loaded);
+
+  useEffect(() => {
+    axios.get("/api/auth/me")
+      .then((res) => dispatch(setUser(res.data.user)))
+      .catch(() => dispatch(clearUser()));
+  }, [dispatch]);
+
+  if (!loaded) {
+    return <div className="p-3">로딩중...</div>;
+  }
 
   return (
     <Routes>

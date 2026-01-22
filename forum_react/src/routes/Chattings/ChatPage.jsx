@@ -3,7 +3,7 @@ import { Container, Row, Col, Card, Badge, Button, ButtonGroup, Dropdown, Dropdo
 import MessageInbox from "./MessageInbox";
 import { Outlet, useNavigate, useLocation, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { setThreads, markThreadRead } from "./ChatSlice"
+import { setThreads, markThreadRead } from "../../store/chatSlice"
 import axios from 'axios';
 import "./Chat.css";
 
@@ -17,7 +17,8 @@ export default function ChatPage() {
   const threads = useSelector(
     (state) => state.chat.threads
   ) || [];
-  
+  console.log(threads)
+
   useEffect(() => {
     axios.get("/api/reqThreads")
       .then((res) => {

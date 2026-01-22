@@ -1,61 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { ObjectId, Db } = require('mongodb');
+const { ObjectId } = require('mongodb');
 const { getDB } = require('../mongoDb');
-const requireLogin = require("../middlewares/requireLogin");
 
-router.get('/reqThreads', requireLogin, async (req, res) => {
-  const db = getDB("forumsData");
-  const myIdObj = new ObjectId(req.session.userId);
-  const myIdStr = String(req.session.userId);
-
-  const threads = await db.collection("threads").aggregate([
-    { $match: { members: myIdObj } },
-
-    {
-      $addFields: {
-        otherUserId: {
-          $first: {
-            $filter: {
-              input: "$members",
-              as: "m",
-              cond: { $ne: ["$$m", myIdObj] }
-            }
-          }
-        },
-        unread: {
-          $ifNull: [
-            {
-              $getField: {
-                field: myIdStr,
-                input: "$unreadCount"
-              }
-            },
-            0
-          ]
-        }
-      }
-    },
-
-    { $lookup: { from: "users", localField: "otherUserId", foreignField: "_id", as: "otherUser" } },
-    { $unwind: "$otherUser" },
-
-    {
-      $project: {
-        "otherUser.passwordHash": 0,
-        "otherUser.email": 0,
-        "otherUser.createdAt": 0,
-      }
-    },
-
-    { $sort: { updatedAt: -1 } }
-  ]).toArray();
-
-  res.json({ success: true, threads });
-});
-
-
-router.post('/threads', requireLogin, async (req, res) => {
+router.post('/threads', async (req, res) => {
   const db = getDB("forumsData");
   const post_id = req.body.post_id
   const sent_id = req.session.userId
@@ -74,13 +22,12 @@ router.post('/threads', requireLogin, async (req, res) => {
     return res.status(400).json({ message: "본인에게는 쪽지를 보낼 수 없습니다." });
   }
 
-  const exist = await db.collection("threads").findOne({
+  const thread = await db.collection("threads").findOne({
     post_id: new ObjectId(post_id),
     members: { $all: [new ObjectId(sent_id), new ObjectId(rec_id)] }
   });
-
-  if (exist) {
-    return res.json({ threadId: exist._id, isNew: false });
+  if (thread) {
+    return res.json({ threadId: thread._id, isNew: false });
   }
 
   const result = await db.collection("threads").insertOne({
@@ -106,10 +53,71 @@ router.post('/threads', requireLogin, async (req, res) => {
   return res.json({ threadId: result.insertedId, isNew: true });
 })
 
-router.get('/reqMessages', requireLogin, async (req, res) => {
+router.get('/reqThreads', async (req, res) => {
   const db = getDB("forumsData");
-  const thread_id = req.query.threadid;
-  const userId = new ObjectId(req.session.userId);
+  const myId = req.session.userId;
+
+  const threads = await db.collection("threads").aggregate([
+    { $match: { members: new ObjectId(myId) } },
+
+    {
+      $addFields: { 
+        otherUserId: {
+          $first: {
+            $filter: {
+              input: "$members",
+              as: "m",
+              cond: { $ne: ["$$m", new ObjectId(myId)] }
+            }
+          }
+        }
+      }
+    },
+
+    {
+      $addFields: {
+        myUnreadCount: {
+          $ifNull: [
+            {
+              $getField: {
+                field: myId,
+                input: "$unreadCount"
+              }
+            },
+            0
+          ]
+        }
+      }
+    },
+
+    { $lookup: { from: "users", localField: "otherUserId", foreignField: "_id", as: "otherUser" } },
+    { $unwind: "$otherUser" },
+
+    {
+      $project: {
+        "otherUser.passwordHash": 0,
+        "otherUser.email": 0,
+        "otherUser.createdAt": 0,
+      }
+    },
+
+    {
+      $project: {
+        "unreadCount": 0,
+      }
+    },
+
+    { $sort: { updatedAt: -1 } }
+  ]).toArray();
+
+
+  res.json({ success: true, threads });
+});
+
+router.get('/reqMessages', async (req, res) => {
+  const db = getDB("forumsData")
+  const thread_id = req.query.threadid
+  const userId = req.session.userId
 
   await db.collection("threads").updateOne(
     {
@@ -130,53 +138,15 @@ router.get('/reqMessages', requireLogin, async (req, res) => {
     .sort({ createdAt: 1 })
     .toArray();
 
-  const shaped = threadChats.map(Chats => ({
-    ...Chats,
-    type: Chats.sent?.toString() === userId.toString() ? "me" : "other"
+  const shaped = threadChats.map((chat) => ({
+    _id: chat._id.toString(),
+    thread_id: chat.thread_id.toString(),
+    text: chat.text,
+    sent: chat.sent.toString(),
+    createdAt: chat.createdAt,
   }));
 
   res.json({ success: true, threadChats: shaped });
 });
-
-router.post('/sendMessage', requireLogin, async (req, res) => {
-  const db = getDB("forumsData");
-  const { threadid, text, otherUserId } = req.body;
-  const sent_id = new ObjectId(req.session.userId);
-
-  if (!threadid || !text) {
-    return res.status(400).json({ success: false });
-  }
-
-  const newMessage = {
-    thread_id: new ObjectId(threadid),
-    text,
-    sent: sent_id,
-    createdAt: new Date(),
-    type: "me"
-  };
-
-  await db.collection("messages").insertOne(newMessage);
-
-  await db.collection("threads").updateOne(
-    { _id: new ObjectId(threadid) },
-    {
-      $set: {
-        lastMessage: text,
-        updatedAt: new Date()
-      },
-      $inc: {
-        [`unreadCount.${otherUserId}`]: 1
-      }
-    }
-  );
-
-  res.json({
-    success: true,
-    message: {
-      ...newMessage
-    }
-  });
-});
-
 
 module.exports = router;

@@ -45,9 +45,9 @@ export default function MessageInbox({ threads, activeId, onSelect }) {
                     </div>
                   </div>
                 
-                  {(t.unread) > 0 && (
+                  {(t.myUnreadCount) > 0 && (
                     <Badge bg="danger" pill>
-                      {t.unread}
+                      {t.myUnreadCount}
                     </Badge>
                   )}
                 </div>

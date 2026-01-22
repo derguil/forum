@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link, Outlet, useSearchParams } from 'react-rou
 import { Button, Container, Nav, Navbar, Row, Col, ListGroup, NavDropdown, Image, Card, Pagination }  from 'react-bootstrap';
 import axios from 'axios';
 import ForumTitle from './ForumTitle';
+import { useSelector } from "react-redux";
 import "./ForumPosts.css"
 
 function ForumPosts() {
@@ -17,8 +18,6 @@ function ForumPosts() {
 
   const [searchParams, setSearchParams] = useSearchParams();
   const currPage = Number(searchParams.get("p") || 1);
-
-  let [userId, setUserId] = useState(null)
 
   useEffect(() => {
     axios.get("/api/reqForum", { params: { forumid } })
@@ -40,13 +39,8 @@ function ForumPosts() {
     .finally(() => setLoading(false));
   }, [forumid, currPage]);
 
-  useEffect(() => {
-    axios.get("/api/auth/me")
-      .then(res => setUserId(res.data.user))
-      .catch(() => setUserId(null));
-  }, []);
-
-  const isLoggedIn = !!userId;
+  const authUserId = useSelector(state => state.auth.user?._id);
+  const isLoggedIn = !!authUserId;
   
   if (loading) return <div style={{ padding: '0 15px' }}>로딩중...</div>
   

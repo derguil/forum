@@ -11,8 +11,25 @@ const DEFAULT_PROFILE_IMG = {
     "https://derguil-profile-img.s3.ap-northeast-2.amazonaws.com/6e119ef1-b710-47a4-ba3e-181439671110.png",
 };
 
-router.get("/me", requireLogin, (req, res) => {
-  res.json({ user: req.session.userId || null });
+router.get("/me", requireLogin, async (req, res) => {
+  try {
+    const db = getDB("forumsData");
+    const userId = req.session.userId;
+
+    const user = await db.collection("users").findOne(
+      { _id: new ObjectId(userId) },
+      { projection: { passwordHash: 0 } }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: "유저 없음" });
+    }
+
+    res.json({ user });
+  } catch (err) {
+    console.error("GET /api/auth/me error:", err);
+    res.status(500).json({ message: "서버 오류" });
+  }
 });
 
 router.post("/register", async (req, res) => {
@@ -55,7 +72,13 @@ router.post("/login", async (req, res) => {
   if (!ok) return res.status(401).json({ message: "비밀번호가 틀렸습니다" });
 
   req.session.userId = user._id.toString(); //serializeUser
-  res.json({ message: "로그인 성공" });
+  const { passwordHash, ...safeUser } = user;
+
+  res.json({
+    success: true,
+    message: "로그인 성공",
+    user: safeUser
+  });
 });
 
 router.post("/logout", requireLogin, (req, res) => {

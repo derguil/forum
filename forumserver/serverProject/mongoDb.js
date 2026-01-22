@@ -3,7 +3,7 @@ const { MongoClient } = require('mongodb');
 let client;
 
 async function connectDB() {
-  const url = process.env.DB_URL;
+  const url = process.env.MONGODB_URL;
   client = await new MongoClient(url).connect();
   console.log('mongoDB연결성공');
   return client;

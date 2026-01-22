@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Button, Container, Row, Col, Image, Card, Form, InputGroup } from 'react-bootstrap';
 import axios from 'axios';
 import ForumTitle from './ForumTitle';
+import { useSelector } from "react-redux";
 import "./PostDetail.css";
 
 export default function PostDetail() {
@@ -14,7 +15,6 @@ export default function PostDetail() {
   const [loading, setLoading] = useState(true);
   const [deleteloading, setDeleteloading] = useState(false);
   const { forumid, postid } = useParams();
-  let [userId, setUserId] = useState(null)
 
   useEffect(() => {
     Promise.all([
@@ -29,13 +29,10 @@ export default function PostDetail() {
       })
       .catch((err) => console.log(err))
       .finally(() => setLoading(false));
-
-    axios.get("/api/auth/me")
-      .then(res => setUserId(res.data.user))
-      .catch(() => setUserId(null));
   }, [postid, refresh]);
 
-  const isLoggedIn = !!userId;
+  const authUserId = useSelector(state => state.auth.user?._id);
+  const isLoggedIn = !!authUserId;
 
   if (loading) return <div className="postdetail-loading-overlay">로딩 중...</div>
   if (deleteloading) return <div className="postdetail-loading-overlay">삭제 중...</div>
@@ -53,7 +50,7 @@ export default function PostDetail() {
                   wtime={timeAgo(post.wtime)}
                   wby={post.written.username}
                   wbyimg={post.written.profileImg.img_URL}
-                  isOwn={userId == post.wby}
+                  isOwn={authUserId == post.wby}
                   isLoggedIn={isLoggedIn}
                   post_id={postid}
                   forum_id={forumid}
@@ -90,7 +87,7 @@ export default function PostDetail() {
                 <Comment
                   key={i}
                   comment={comment}
-                  userId={userId}
+                  authUserId={authUserId}
                   isLoggedIn={isLoggedIn}
                   setRefresh={setRefresh}
                   postid={postid}
@@ -182,7 +179,7 @@ function Profile({ wtime, wby, wbyimg, isOwn, isLoggedIn, post_id, forum_id, set
   )
 }
 
-function Comment({ comment, userId, isLoggedIn, setRefresh, postid, setDeleteloading }) {
+function Comment({ comment, authUserId, isLoggedIn, setRefresh, postid, setDeleteloading }) {
   return (
     <Card style={{ maxWidth: '2000px', width: '100%', margin: '0 auto' }}>
       <Card.Body>
@@ -190,7 +187,7 @@ function Comment({ comment, userId, isLoggedIn, setRefresh, postid, setDeleteloa
           wtime={timeAgo(comment.wtime)}
           wby={comment.written.username}
           wbyimg={comment.written.profileImg.img_URL}
-          isOwn={userId == comment.wby}
+          isOwn={authUserId == comment.wby}
           isLoggedIn={isLoggedIn}
           comment_id={comment._id}
           setRefresh={setRefresh}

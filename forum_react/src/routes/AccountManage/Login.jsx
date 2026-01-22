@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useActionData, useNavigate } from "react-router-dom";
 import { Container, Row, Col, Card, Form, Button } from "react-bootstrap";
-import axios from 'axios';
+import { useDispatch } from "react-redux";
+import axios from "axios";
+import { setUser, clearUser } from "../../store/authSlice"
 
 function Login() {
   let navigate = useNavigate()
+  const dispatch = useDispatch()
 
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
@@ -19,10 +22,13 @@ function Login() {
       password
     })
     .then(res => {
+      dispatch(setUser(res.data.user));
+
       navigate("/forum");
     })
     .catch(err => {
       console.error(err);
+      dispatch(clearUser());
       alert(err.response?.data?.message || "작성 중 오류 발생");
     });
   };
