@@ -7,6 +7,7 @@ import {
   ChangeProfileImgModal,
   ChangePasswordModal,
 } from "./AccountModals";
+import { socket } from "../../socket";
 import "./MyPage.css";
 import axios from 'axios';
 
@@ -136,6 +137,7 @@ function MyPage() {
   const handleLogout = () => {
     axios.post("/api/auth/logout")
       .then(res => {
+        socket.disconnect()
         console.log("msg:", res.data);
         alert("로그아웃 성공");
         navigate("/login");

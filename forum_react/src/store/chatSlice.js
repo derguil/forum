@@ -25,7 +25,7 @@ const chatSlice = createSlice({
     },
 
     updateThreadPreview(state, action) {
-      const { threadid, lastMessage, updatedAt } = action.payload;
+      const { threadid, lastMessage, updatedAt, unreadDelta } = action.payload;
 
       const idx = state.threads.findIndex(t => String(t._id) === String(threadid));
       if (idx === -1) return;
@@ -33,6 +33,7 @@ const chatSlice = createSlice({
       const t = state.threads[idx];
       t.lastMessage = lastMessage;
       t.updatedAt = updatedAt;
+      t.myUnreadCount += unreadDelta;
 
       state.threads.splice(idx, 1);
       state.threads.unshift(t);

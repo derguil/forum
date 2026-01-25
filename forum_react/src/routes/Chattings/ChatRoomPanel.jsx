@@ -2,13 +2,21 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Form, Button, InputGroup } from "react-bootstrap";
 import { useNavigate, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { setMessages, addMessage, updateThreadPreview } from "../../store/chatSlice"
+import { setMessages, addMessage } from "../../store/chatSlice"
 import axios from "axios";
-import io from 'socket.io-client';
+import { socket } from "../../socket";
+import './ChatRoomPanel.css'
 
-const socket = io("http://localhost:8080", {
-  withCredentials: true,
-});
+function formatMMDD_HHMM(date) {
+  const d = new Date(date);
+
+  const MM = String(d.getMonth() + 1).padStart(2, "0");
+  const DD = String(d.getDate()).padStart(2, "0");
+  const HH = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+
+  return `${MM}/${DD} ${HH}:${mm}`;
+}
 
 export default function ChatRoomPanel() {
   const navigate = useNavigate()
@@ -82,43 +90,14 @@ export default function ChatRoomPanel() {
         sent: payload.sent,
         createdAt: payload.createdAt,
       };
-
       dispatch(addMessage({
         threadid: payload.thread_id,
         message: shapeMessage(m, authUserId),
       }));
-
-      dispatch(updateThreadPreview({
-        threadid: payload.thread_id,
-        lastMessage: payload.text,
-        updatedAt: payload.createdAt,
-      }));
     };
-
     socket.on("broadcast", onBroadcast);
     return () => socket.off("broadcast", onBroadcast);
-  }, [dispatch, authUserId]);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  }, [socket, dispatch, authUserId]);
 
   useEffect(() => {
     if (loading) return;
@@ -142,7 +121,7 @@ export default function ChatRoomPanel() {
           <div key={m._id} className={`msg-row ${m.type}`}>
             <div className={`msg-bubble ${m.type}`}>
               <div className="msg-text">{m.text}</div>
-              <div className="msg-time">{m.createdAt}</div>
+              <div className="msg-time">{formatMMDD_HHMM(m.createdAt)}</div>
             </div>
           </div>
         ))}

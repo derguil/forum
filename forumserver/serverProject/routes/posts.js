@@ -74,6 +74,7 @@ router.get('/reqPosts', async (req, res) => {
 router.get('/reqPost', async (req, res) => {
   const db = getDB("forumsData");
   const postid = req.query.postid;
+  const user_id = req.session.userId
 
   const [post] = await db.collection('posts').aggregate([
     { $match: { _id: new ObjectId(postid) }},
@@ -98,7 +99,21 @@ router.get('/reqPost', async (req, res) => {
       }
     }
   ]).toArray();
-  res.send({ success: true, post: post });
+
+  const sP = await db.collection('users').findOne(
+    { _id: new ObjectId(user_id) },
+    { projection:
+      {
+        "scrapPosts": 1
+      }
+    }
+  )
+
+  const isScrapped = sP.scrapPosts.some(id =>
+    id.equals(new ObjectId(postid))
+  );
+
+  res.send({ success: true, post: post, isScrapped: isScrapped });
 });
 
 router.post('/writePost', requireLogin, upload.array("images", 20), async (req, res) => {
@@ -227,5 +242,98 @@ router.delete('/post', requireLogin, async (req, res) => {
   res.send({ success: true });
 });
 
+router.post("/postVoteInc", requireLogin, async (req, res) => {
+  const db = getDB("forumsData");
+  const { post_id } = req.body;
+  const userId = new ObjectId(req.session.userId);
+  const postId = new ObjectId(post_id);
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  const already = await db.collection("postVotes").findOne({
+    postId,
+    userId,
+    date: today,
+  });
+
+  if (already) {
+    return res.status(400).json({
+      success: false,
+      message: "공감은 1일 1회만 가능합니다.",
+    });
+  }
+
+  await db.collection("postVotes").insertOne({
+    postId,
+    userId,
+    date: today,
+    votedAt: new Date(),
+  });
+
+  await db.collection("posts").updateOne(
+    { _id: postId },
+    { $inc: { voteCount: 1 } }
+  );
+
+  res.json({ success: true });
+});
+
+router.post("/addPostScrap", requireLogin, async (req, res) => {
+  const db = getDB("forumsData");
+  const { post_id } = req.body;
+  const userId = new ObjectId(req.session.userId);
+  const postId = new ObjectId(post_id);
+
+  await db.collection("users").updateOne(
+    { _id: userId },
+    {
+      $addToSet: {
+        scrapPosts: postId
+      }
+    }
+  )
+
+  await db.collection("posts").updateOne(
+    { _id: postId },
+    { $inc: { scrapCount: 1 } }
+  )
+
+  res.json({ success: true });
+});
+
+router.post("/delPostScrap", requireLogin, async (req, res) => {
+  const db = getDB("forumsData");
+  const { post_id } = req.body;
+  const userId = new ObjectId(req.session.userId);
+  const postId = new ObjectId(post_id);
+
+  const user = await db.collection("users").findOne({
+    _id: userId,
+    scrapPosts: postId,
+  });
+
+  if (!user) {
+    return res.status(400).json({
+      success: false,
+      message: "이미 스크랩이 해제되었습니다.",
+    });
+  }
+
+  await db.collection("users").updateOne(
+    { _id: userId },
+    {
+      $pull: {
+        scrapPosts: postId
+      }
+    }
+  )
+
+  await db.collection("posts").updateOne(
+    { _id: postId },
+    { $inc: { scrapCount: -1 } }
+  )
+
+  res.json({ success: true });
+});
 
 module.exports = router;

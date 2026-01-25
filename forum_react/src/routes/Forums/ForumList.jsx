@@ -30,9 +30,9 @@ function ForumList(){
     <>
       <ul className="forum-list">
         {
-          forums.map((forum, i)=>{
+          forums.map((forum)=>{
             return(
-              <li>
+              <li key={forum._id}>
                 <Link to={`/forum/${forum._id}`}>{forum.title}</Link>
               </li>
             )

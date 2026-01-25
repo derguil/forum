@@ -52,11 +52,9 @@ function ForumPosts() {
             <ForumTitle forumtitle={forum.title} isLoggedIn={isLoggedIn}></ForumTitle>
             {posts.length === 0 && <div>게시글을 찾을 수 없습니다.</div>}
             {
-              posts.map((post, i)=>{  
+              posts.map((post)=>{  
                 return(
-                  <div key={i}>
-                    <Post post={post}/>
-                  </div>
+                  <Post key={post._id} post={post}/>
                 )
               })
             }
@@ -93,12 +91,18 @@ function Post({ post }) {
       >
         <Card.Body className="post-body">
           <div className="post-left">
-            <Card.Title className="post-title">{post.title}</Card.Title>
-            <Card.Text className="post-content preview">{post.content}</Card.Text>
+            <h2 className="post-title">{post.title}</h2>
+            <div className="post-content preview">{post.content}</div>
 
             <div className="post-meta">
-              <ul className="status">
+              <ul className="detailStatus">
+                {post.voteCount > 0 && (
+                  <li title="공감" className="vote">{post.voteCount}</li>
+                )}
                 <li title="댓글" className="comment">{post.commentCount}</li>
+                {post.scrapCount > 0 && (
+                  <li title="스크랩" className="scrap">{post.scrapCount}</li>
+                )}
               </ul>
               <time className="post-time">{timeAgo(post.wtime)}</time>
               <h3 className="post-user">{post.written?.username}</h3>

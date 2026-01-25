@@ -3,33 +3,50 @@ import { Container, Row, Col, Card, Badge, Button, ButtonGroup, Dropdown, Dropdo
 import MessageInbox from "./MessageInbox";
 import { Outlet, useNavigate, useLocation, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { setThreads, markThreadRead } from "../../store/chatSlice"
+import { setThreads, updateThreadPreview, markThreadRead } from "../../store/chatSlice"
 import axios from 'axios';
+import { socket } from "../../socket";
 import "./Chat.css";
 
 export default function ChatPage() {  
   const navigate = useNavigate();
   const { threadid } = useParams();
   const dispatch = useDispatch();
-
-  const activeId = threadid || "";
-
+  
   const threads = useSelector(
     (state) => state.chat.threads
   ) || [];
-  console.log(threads)
-
+  
   useEffect(() => {
     axios.get("/api/reqThreads")
-      .then((res) => {
-        dispatch(setThreads(res.data.threads || []));
-      })
-      .catch((err) => console.log(err))
+    .then((res) => {
+      dispatch(setThreads(res.data.threads || []));
+    })
+    .catch((err) => console.log(err))
   }, []);
-
-  const activeThread = useMemo(() => threads.find((t) => t._id === activeId) ?? null,
-    [threads, activeId]
+  
+  const activeThreadId = threadid;
+  const activeThread = useMemo(() => threads.find((t) => t._id === activeThreadId) ?? null,
+    [threads, activeThreadId]
   );
+
+  const authUserId = useSelector(state => state.auth.user?._id);
+
+  useEffect(() => { //?????????????????????????????????????
+    const handleThreadUpdate = (payload) => {
+      const delta = activeThreadId === payload.thread_id ? 0 : payload.unreadCountInc;
+
+      dispatch(updateThreadPreview({
+        threadid: payload.thread_id,
+        lastMessage: payload.lastMessage,
+        updatedAt: payload.updatedAt,
+        unreadDelta: delta,
+      }));
+    };
+
+    socket.on("thread:update", handleThreadUpdate);
+    return () => socket.off("thread:update", handleThreadUpdate);
+  }, [socket, dispatch, authUserId]);
 
   const handleSelectThread = (_id) => {
     dispatch(markThreadRead({ _id }));
@@ -55,7 +72,7 @@ export default function ChatPage() {
             <Card.Body className="p-0">
               <MessageInbox
                 threads={threads}
-                activeId={activeId}
+                activeThreadId={activeThreadId}
                 onSelect={handleSelectThread}
               />
             </Card.Body>

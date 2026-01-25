@@ -60,18 +60,19 @@ router.post("/sendMessage", requireLogin, async (req, res) => {
     createdAt: createdAt,
   });
 
-  // io.to(`user:${myId}`).emit("thread:update", {
-  //   thread_id: threadid,
-  //   lastMessage: text,
-  //   updatedAt: createdAt,
-  // });
+  io.to(`user:${myId}`).emit("thread:update", {
+    thread_id: threadid,
+    lastMessage: text,
+    updatedAt: createdAt,
+    unreadCountInc: 0,
+  });
 
-  // io.to(`user:${otherUserId}`).emit("thread:update", {
-  //   thread_id: threadid,
-  //   lastMessage: text,
-  //   updatedAt: createdAt,
-  //   unreadCountInc: 1, // receiver의 unreadCount +1
-  // });
+  io.to(`user:${otherUserId}`).emit("thread:update", {
+    thread_id: threadid,
+    lastMessage: text,
+    updatedAt: createdAt,
+    unreadCountInc: 1,
+  });
 
   return res.json({ success: true });
 });

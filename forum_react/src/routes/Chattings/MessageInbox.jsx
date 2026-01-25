@@ -1,14 +1,18 @@
 import { ListGroup, Badge } from "react-bootstrap";
+import './MessageInbox.css'
 
-function timeAgo(wtime) {
-  const diff = (new Date() - new Date(wtime)) / 1000;
-  if (diff < 60) return `${Math.floor(diff)}초 전`;
-  if (diff < 3600) return `${Math.floor(diff / 60)}분 전`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}시간 전`;
-  return `${Math.floor(diff / 86400)}일 전`;
+function formatMMDD_HHMM(date) {
+  const d = new Date(date);
+
+  const MM = String(d.getMonth() + 1).padStart(2, "0");
+  const DD = String(d.getDate()).padStart(2, "0");
+  const HH = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+
+  return `${MM}/${DD} ${HH}:${mm}`;
 }
 
-export default function MessageInbox({ threads, activeId, onSelect }) {
+export default function MessageInbox({ threads, activeThreadId, onSelect }) {
   const isEmpty = !threads || threads.length === 0;
   return (
     <div className="inbox-wrap">
@@ -19,39 +23,27 @@ export default function MessageInbox({ threads, activeId, onSelect }) {
         </div>
       ) : (
         <ListGroup variant="flush">
-          {threads.map((t) => {
-            const active = String(t._id) === String(activeId);
+          {threads.map((t, idx) => {
+            const active = String(t._id) === String(activeThreadId);
 
             return (
-              <ListGroup.Item
-                key={String(t._id)}
-                action
-                onClick={() => onSelect(t._id)}
-                className={`inbox-item ${active ? "active" : ""}`}
-              >
-                <div className="d-flex justify-content-between align-items-start">
-                  <div className="me-2 w-100">
-                    <div className="d-flex align-items-center justify-content-between">
-                      <div className="inbox-name">
-                        {t.otherUser.username ?? "알 수 없음"}
-                      </div>
-                      <div className="inbox-time">
-                        {timeAgo(t.updatedAt)}
-                      </div>
-                    </div>
-
-                    <div className="inbox-last">
-                      {t.lastMessage ?? "대화를 시작해보세요"}
-                    </div>
+              // <ListGroup.Item
+              //   key={idx}
+              //   action
+              //   onClick={() => onSelect(t._id)}
+              //   // className={`inbox-item ${active ? "active" : ""}`}
+              // >
+              <div className={`thread ${active ? "active" : ""}`} key={idx} onClick={() => onSelect(t._id)}>
+                <div className="thread-main">
+                  <div className="thread-top">
+                    <div className="thread-name">{t.otherUser.username}</div>
+                    <div className="thread-time">{formatMMDD_HHMM(t.updatedAt)}</div>
                   </div>
-                
-                  {(t.myUnreadCount) > 0 && (
-                    <Badge bg="danger" pill>
-                      {t.myUnreadCount}
-                    </Badge>
-                  )}
+                  <div className="thread-last">{t.lastMessage ?? "대화를 시작해보세요"}</div>
                 </div>
-              </ListGroup.Item>
+                {t.myUnreadCount > 0 && <div className="badge">{t.myUnreadCount}</div>}
+              </div>
+              // </ListGroup.Item>
             );
           })}
         </ListGroup>

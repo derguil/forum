@@ -50,7 +50,7 @@ io.use((socket, next) => {
 io.use((socket, next) => {
   const userId = socket.request.session?.userId;
   if (!userId) return next(new Error("UNAUTHORIZED"));
-  // 예: DB에서 user 조회해서 붙이기
+  // -DB에서 user 조회해서 붙이기
   // socket.user = await users.findOne({ _id: new ObjectId(userId) });
   
   socket.userId = userId;

@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { socket } from "./socket";
 import { useDispatch, useSelector } from "react-redux";
 import axios from "axios";
 import { setUser, clearUser } from "./store/authSlice";
@@ -30,8 +31,21 @@ function App() {
   useEffect(() => {
     axios.get("/api/auth/me")
       .then((res) => dispatch(setUser(res.data.user)))
-      .catch(() => dispatch(clearUser()));
+      .catch((err) => {
+        // console.log(err.response.data.message)
+        dispatch(clearUser());
+      })
   }, [dispatch]);
+
+  const userId = useSelector((state) => state.auth.user?._id);
+  useEffect(() => {
+    if (userId) {
+      socket.connect()
+      socket.emit("user:join", userId)
+    } else {
+      socket.disconnect()
+    }
+  }, [userId]);
 
   if (!loaded) {
     return <div className="p-3">로딩중...</div>;
