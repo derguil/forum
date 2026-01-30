@@ -1,6 +1,8 @@
 require("dotenv").config();
 const express = require("express");
 
+const { connectDB } = require("./mongoDb");
+
 const session = require("express-session");
 const { RedisStore } = require("connect-redis");
 const redisClient = require("./redisClient");
@@ -9,11 +11,12 @@ const http = require("http");
 const cors = require("cors");
 const { Server } = require("socket.io");
 
+const { startCron } = require("./worker.js")
+
 const app = express();
 const server = http.createServer(app);
 const port = process.env.PORT;
 
-const { connectDB } = require("./mongoDb");
 
 app.use(cors({
   origin: "http://localhost:5173",
@@ -77,6 +80,7 @@ app.set("io", io);
 
 app.use("/api", require("./routes/forums"));
 app.use("/api", require("./routes/posts"));
+app.use("/api", require("./routes/rankedposts"));
 app.use("/api", require("./routes/comments"));
 app.use("/api/auth", require("./routes/accountManage"));
 app.use("/api", require("./routes/mypage"));
@@ -86,6 +90,7 @@ app.use("/api", require("./routes/socketIOchattings"));
 (async () => {
   await redisClient.connect();
   await connectDB();
+  startCron()
   
   server.listen(port, () => {
     console.log(`http://localhost:${port} 에서 서버 실행중`)

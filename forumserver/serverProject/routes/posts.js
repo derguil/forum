@@ -58,6 +58,9 @@ router.get('/reqPosts', async (req, res) => {
     },
     { $project:  //https://www.mongodb.com/ko-kr/docs/manual/reference/operator/aggregation/project/#std-label-remove-example
       { //lookup에서 필요한것만 가져오기로 성능 개선
+        "written._id": 0,
+        "written.profileImg": 0,
+        "written.scrapPosts": 0,
         "written.email": 0,
         "written.passwordHash": 0,
         "written.createdAt": 0,
@@ -67,14 +70,12 @@ router.get('/reqPosts', async (req, res) => {
   const totalPostsCount = await db.collection('posts').countDocuments(
     { parent_id: new ObjectId(forumid) }
   )
-
   res.send({ success: true, posts: posts, totalPostsCount: totalPostsCount });
 });
 
 router.get('/reqPost', async (req, res) => {
   const db = getDB("forumsData");
   const postid = req.query.postid;
-  const user_id = req.session.userId
 
   const [post] = await db.collection('posts').aggregate([
     { $match: { _id: new ObjectId(postid) }},
@@ -100,18 +101,24 @@ router.get('/reqPost', async (req, res) => {
     }
   ]).toArray();
 
-  const sP = await db.collection('users').findOne(
-    { _id: new ObjectId(user_id) },
-    { projection:
-      {
-        "scrapPosts": 1
+  const user_id = req.session.userId
+  let isScrapped = false
+  if(user_id){
+    const sP = await db.collection('users').findOne(
+      { _id: new ObjectId(user_id) },
+      { projection:
+        {
+          "scrapPosts": 1
+        }
       }
-    }
-  )
-
-  const isScrapped = sP.scrapPosts.some(id =>
-    id.equals(new ObjectId(postid))
-  );
+    )
+  
+    isScrapped = sP.scrapPosts.some(id =>
+      id.equals(new ObjectId(postid))
+    );
+  }else{
+    isScrapped = false
+  }
 
   res.send({ success: true, post: post, isScrapped: isScrapped });
 });
@@ -144,7 +151,10 @@ router.post('/writePost', requireLogin, upload.array("images", 20), async (req, 
     images,
     wtime: new Date(),
     wby: new ObjectId(user_id),
-    commentCount: 0
+    commentCount: 0,
+    voteCount: 0,
+    scrapCount: 0,
+    updatedAt: new Date()
   });
 
   res.send({ success: true });
@@ -244,8 +254,9 @@ router.delete('/post', requireLogin, async (req, res) => {
 
 router.post("/postVoteInc", requireLogin, async (req, res) => {
   const db = getDB("forumsData");
-  const { post_id } = req.body;
+  const { forum_id, post_id } = req.body;
   const userId = new ObjectId(req.session.userId);
+  const forumId = new ObjectId(forum_id);
   const postId = new ObjectId(post_id);
 
   const today = new Date().toISOString().slice(0, 10);
@@ -268,12 +279,54 @@ router.post("/postVoteInc", requireLogin, async (req, res) => {
     userId,
     date: today,
     votedAt: new Date(),
-  });
+  });  
 
-  await db.collection("posts").updateOne(
-    { _id: postId },
-    { $inc: { voteCount: 1 } }
-  );
+  const { value: updatedPost } =
+    await db.collection("posts").findOneAndUpdate(
+      { _id: postId },
+      { $inc: { voteCount: 1 } },
+      { returnDocument: "after" }
+    );
+  
+  if (updatedPost.voteCount >= 10) {
+    await db.collection('rankings').updateOne(
+      {
+        forumType: "hot",
+        forumId,
+        postId
+      },
+      {
+        $set: {
+          score: updatedPost.voteCount,
+          rankedAt: new Date()
+        },
+        $setOnInsert: {
+          firstRankedAt: new Date()
+        }
+      },
+      { upsert: true }
+    );
+  }
+
+  if (updatedPost.voteCount >= 100) {
+    await db.collection('rankings').updateOne(
+      {
+        forumType: "best",
+        forumId,
+        postId
+      },
+      {
+        $set: {
+          score: updatedPost.voteCount,
+          rankedAt: new Date()
+        },
+        $setOnInsert: {
+          firstRankedAt: new Date()
+        }
+      },
+      { upsert: true }
+    );
+  }
 
   res.json({ success: true });
 });

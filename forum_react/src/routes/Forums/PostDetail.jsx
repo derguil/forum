@@ -2,8 +2,9 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Container, Row, Col, Image, Card, Form, InputGroup, Button } from "react-bootstrap";
 import axios from "axios";
-import { useSelector } from "react-redux";
 import ForumTitle from "./ForumTitle";
+import SidePostsBar from './BestPosts/SidePostsBar'
+import { useSelector } from "react-redux";
 import styles from "./PostDetail.module.css";
 
 export default function PostDetail() {
@@ -50,7 +51,7 @@ export default function PostDetail() {
 
     setVoting(true);
     axios
-      .post("/api/postVoteInc", { post_id: postid })
+      .post("/api/postVoteInc", { forum_id: forumid, post_id: postid })
       .then(() => {
         setPost(prev => ({
           ...prev,
@@ -116,73 +117,69 @@ export default function PostDetail() {
   return (
     <Container fluid>
       <Row className="justify-content-center">
-        <Col xs={12} md={10} lg={8}>
+        <Col xs={12} md={7} lg={7}>
           <div className={styles.postdetailWrap}>
-            <ForumTitle forumtitle={forum?.title} isLoggedIn={isLoggedIn} />
+            <ForumTitle forumid={forumid} forumtitle={forum?.title} isLoggedIn={isLoggedIn} />
 
-            <Card className={`mx-auto ${styles.postCard}`} style={{ borderRadius: 0 }}>
-              <Card.Body>
-                <PostHeader
-                  post={post}
-                  forumid={forumid}
-                  postid={postid}
-                  setDeleteloading={setDeleteloading}
-                />
-                <h1 className={styles.postTitle}>
-                  {post?.title}
-                </h1>
-                <div className={styles.postdetailContent}>
-                  {post?.content}
+            <div className={styles.postCard}>
+              <PostHeader
+                post={post}
+                forumid={forumid}
+                postid={postid}
+                setDeleteloading={setDeleteloading}
+              />
+              <h1 className={styles.postTitle}>
+                {post?.title}
+              </h1>
+              <div className={styles.postdetailContent}>
+                {post?.content}
+              </div>
+              {post?.images?.length > 0 && (
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "12px",
+                  }}
+                >
+                  {post.images.map((img, idx) => (
+                    <Image
+                      key={img?.img_key || img?.img_URL || idx}
+                      src={img.img_URL}
+                      style={{ width: "100%", objectFit: "contain", cursor: "pointer" }}
+                    />
+                  ))}
                 </div>
-
-                {post?.images?.length > 0 && (
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "12px",
-                    }}
-                  >
-                    {post.images.map((img, idx) => (
-                      <Image
-                        key={img?.img_key || img?.img_URL || idx}
-                        src={img.img_URL}
-                        style={{ width: "100%", objectFit: "contain", cursor: "pointer" }}
-                      />
-                    ))}
-                  </div>
-                )}
-
-                <ul className={styles.detailStatus}>
-                  <li title="공감" className={styles.vote}>
-                    {post?.voteCount ?? 0}
-                  </li>
-                  <li title="댓글" className={styles.comment}>
-                    {post?.commentCount ?? 0}
-                  </li>
-                  <li title="스크랩" className={styles.scrap}>
-                    {post?.scrapCount ?? 0}
-                  </li>
-                </ul>
-                {
-                  isLoggedIn && (
-                    <div className={styles.spanBtns}>
-                      <span className={styles.voteSpan} onClick={handlePostVoteInc}>
-                        공감
+              )}
+              <ul className={styles.detailStatus}>
+                <li title="공감" className={styles.vote}>
+                  {post?.voteCount ?? 0}
+                </li>
+                <li title="댓글" className={styles.comment}>
+                  {post?.commentCount ?? 0}
+                </li>
+                <li title="스크랩" className={styles.scrap}>
+                  {post?.scrapCount ?? 0}
+                </li>
+              </ul>
+              {
+                isLoggedIn && (
+                  <div className={styles.spanBtns}>
+                    <span className={styles.voteSpan} onClick={handlePostVoteInc}>
+                      공감
+                    </span>
+                    {isScrapped ?
+                      <span className={styles.scrapSpanO} onClick={handleDelPostScrap}>
+                        스크랩 취소
+                      </span> :
+                      <span className={styles.scrapSpanX} onClick={handleAddPostScrap}>
+                        스크랩
                       </span>
-                      {isScrapped ?
-                        <span className={styles.scrapSpanO} onClick={handleDelPostScrap}>
-                          스크랩 취소
-                        </span> :
-                        <span className={styles.scrapSpanX} onClick={handleAddPostScrap}>
-                          스크랩
-                        </span>
-                      }
-                    </div>
-                  )
-                }
-              </Card.Body>
-            </Card>
+                    }
+                  </div>
+                )
+              }
+            </div>
 
             <hr />
 
@@ -200,6 +197,9 @@ export default function PostDetail() {
               {isLoggedIn && <CommentWrite postid={postid} refetch={refetch} />}
             </div>
           </div>
+        </Col>
+        <Col xs={12} md={3} lg={3}>
+          <SidePostsBar></SidePostsBar>
         </Col>
       </Row>
     </Container>

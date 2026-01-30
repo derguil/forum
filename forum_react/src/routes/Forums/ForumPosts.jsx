@@ -3,8 +3,28 @@ import { useParams, useNavigate, Link, Outlet, useSearchParams } from 'react-rou
 import { Button, Container, Nav, Navbar, Row, Col, ListGroup, NavDropdown, Image, Card, Pagination }  from 'react-bootstrap';
 import axios from 'axios';
 import ForumTitle from './ForumTitle';
+import SidePostsBar from './BestPosts/SidePostsBar'
 import { useSelector } from "react-redux";
-import "./ForumPosts.css"
+import styles from "./ForumPosts.module.css"
+
+const emptyStyle = {
+  width: "100%",
+  height: "300px",
+  border: "1px solid #e5e7eb",
+  backgroundColor: "#fff",
+
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+
+  padding: "12px 16px",
+  marginBottom: "12px",
+};
+
+const emptyTextStyle = {
+  fontSize: "16px",
+  margin: 0,
+};
 
 function ForumPosts() {
   const navigate = useNavigate();
@@ -19,6 +39,8 @@ function ForumPosts() {
   const [searchParams, setSearchParams] = useSearchParams();
   const currPage = Number(searchParams.get("p") || 1);
 
+  const isRankForum = (forumid === "6979d19e7302ac81bff9a61b" || forumid === "6979d1a87302ac81bff9a61c");
+
   useEffect(() => {
     axios.get("/api/reqForum", { params: { forumid } })
       .then(res => setForum(res.data.forum))
@@ -27,16 +49,37 @@ function ForumPosts() {
 
   useEffect(() => {
     setLoading(true);
-
-    axios.get("/api/reqPosts", {
-      params: { forumid, currPage, limit }
-    })
-    .then(res => {
-      setPosts(res.data.posts);
-      setPostCount(res.data.totalPostsCount);
-    })
-    .catch(console.log)
-    .finally(() => setLoading(false));
+    if(forumid === "6979d19e7302ac81bff9a61b") { //hot게시판
+        axios.get("/api/reqHotPosts", {
+          params: { currPage, limit }
+        })
+        .then(res => {
+          setPosts(res.data.posts);
+          setPostCount(res.data.totalPostsCount);
+        })
+        .catch(console.log)
+        .finally(() => setLoading(false)); 
+    } else if(forumid === "6979d1a87302ac81bff9a61c") { //best게시판
+        axios.get("/api/reqBestPosts", {
+          params: { currPage, limit }
+        })
+        .then(res => {
+          setPosts(res.data.posts);
+          setPostCount(res.data.totalPostsCount);
+        })
+        .catch(console.log)
+        .finally(() => setLoading(false)); 
+    } else {
+      axios.get("/api/reqPosts", {
+        params: { forumid, currPage, limit }
+      })
+      .then(res => {
+        setPosts(res.data.posts);
+        setPostCount(res.data.totalPostsCount);
+      })
+      .catch(console.log)
+      .finally(() => setLoading(false));
+    }
   }, [forumid, currPage]);
 
   const authUserId = useSelector(state => state.auth.user?._id);
@@ -47,21 +90,33 @@ function ForumPosts() {
   return (
     <Container fluid className="ForumPosts-wrap">
       <Row className="justify-content-center">
-        <Col xs={12} md={10} lg={8}>
-          <div id="container" className='article'>
-            <ForumTitle forumtitle={forum.title} isLoggedIn={isLoggedIn}></ForumTitle>
-            {posts.length === 0 && <div>게시글을 찾을 수 없습니다.</div>}
-            {
-              posts.map((post)=>{  
-                return(
-                  <Post key={post._id} post={post}/>
-                )
-              })
+        <Col xs={12} md={7} lg={7}>
+          <div id="container" className={styles.articles}>
+            <ForumTitle forumid={forumid} forumtitle={forum.title} isLoggedIn={isLoggedIn} isRankForum={isRankForum}></ForumTitle>
+            {postCount === 0 &&
+              <div className="wrap" style={emptyStyle}>
+                <h2 style={emptyTextStyle}>게시글을 찾을 수 없습니다.</h2>
+              </div>
             }
+            <div className={styles.postsWrap}>
+              {
+                posts.map((post)=>{  
+                  return(
+                    <Post key={post._id} post={post}/>
+                  )
+                })
+              }
+            </div>
           </div>
-          <hr></hr>
-          <div style={{ display: "flex", justifyContent: "center" }}>
-            <PagiNation postCount={postCount} currPage={currPage} limit={limit}></PagiNation>
+        </Col>
+        <Col xs={12} md={3} lg={3}>
+          <SidePostsBar></SidePostsBar>
+        </Col>
+      </Row>
+      <Row className="justify-content-center">
+        <Col xs={12}>
+          <div className={styles.paginationWrap}>
+            <PagiNation postCount={postCount} currPage={currPage} limit={limit} />
           </div>
         </Col>
       </Row>
@@ -81,44 +136,48 @@ function timeAgo(wtime) {
 
 function Post({ post }) {
   const hasImage = Array.isArray(post.images) && post.images.length > 0;
+  const isFirst = (post.voteCount + post.commentCount + post.scrapCount == 0)
 
   return (
-    <Card className="post-card">
+    <div className={styles.postCard}>
       <Card.Link
         as={Link}
         to={`/forum/${post.parent_id}/${post._id}`}
-        className="post-link"
+        className={styles.postLink}
       >
-        <Card.Body className="post-body">
-          <div className="post-left">
-            <h2 className="post-title">{post.title}</h2>
-            <div className="post-content preview">{post.content}</div>
+        <div className={styles.postBody}>
+          <div className={styles.postLeft}>
+            { post.forum && <h2 className={styles.postForumTitle}>{post.forum.title}</h2>}
+            <h2 className={styles.postTitle}>{post.title}</h2>
+            <div className={styles.postContent}>{post.content.replace(/\r\n|\r|\n/g, '\n').replace(/\n+/g, '\n').trim()}</div>
 
-            <div className="post-meta">
-              <ul className="detailStatus">
+            <div className={`${styles.postMeta} ${isFirst ? styles.noDivider : ""}`}>
+              <ul className={styles.detailStatus}>
                 {post.voteCount > 0 && (
-                  <li title="공감" className="vote">{post.voteCount}</li>
+                  <li title="공감" className={styles.vote}>{post.voteCount}</li>
                 )}
-                <li title="댓글" className="comment">{post.commentCount}</li>
+                {post.commentCount > 0 && (
+                  <li title="댓글" className={styles.comment}>{post.commentCount}</li>
+                )}
                 {post.scrapCount > 0 && (
-                  <li title="스크랩" className="scrap">{post.scrapCount}</li>
+                  <li title="스크랩" className={styles.scrap}>{post.scrapCount}</li>
                 )}
               </ul>
-              <time className="post-time">{timeAgo(post.wtime)}</time>
-              <h3 className="post-user">{post.written?.username}</h3>
+              <time className={`${styles.postTime} ${isFirst ? styles.noDivider : ""}`}>{timeAgo(post.wtime)}</time>
+              <h3 className={styles.postUser}>{post.written?.username}</h3>
             </div>
           </div>
 
           {hasImage && (
             <Image
               src={post.images[0].img_URL}
-              className="post-thumb"
+              className={styles.postThumb}
               alt="post thumbnail"
             />
           )}
-        </Card.Body>
+        </div>
       </Card.Link>
-    </Card>
+    </div>
   );
 }
 

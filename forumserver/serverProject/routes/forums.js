@@ -19,7 +19,6 @@ router.get('/reqForum', async (req, res) => {
   res.send({ success: true, forum: forum });
 });
 
-
 router.post('/addForum', requireLogin, async (req, res) => {
   const db = getDB("forumsData")
   const { forumName } = req.body

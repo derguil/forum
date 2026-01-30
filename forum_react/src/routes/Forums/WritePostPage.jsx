@@ -67,7 +67,7 @@ function WritePostPage() {
     const newOnes = files.map((file) => ({
       id: `${crypto?.randomUUID ? crypto.randomUUID() : Date.now() + Math.random()}`,
       file,
-      url: URL.createObjectURL(file),
+      url: URL.createObjectURL(file), //Blob
     }));
 
     setAttachments((prev) => [...prev, ...newOnes]);

@@ -1,20 +1,38 @@
-import { useEffect, useState } from 'react'
-import { useParams, useNavigate, Link, Outlet } from 'react-router-dom'
-import { Button, Container, Nav, Navbar, Row, Col, ListGroup, NavDropdown, Image, Card }  from 'react-bootstrap';
-import axios from 'axios';
+import { Button } from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
 
-function ForumTitle({ forumtitle, isLoggedIn }) {
+const titleStyle = {
+  width: "100%",
+  height: "60px",
+  border: "1px solid #e5e7eb",
+  backgroundColor: "#fff",
+
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+
+  padding: "12px 16px",
+  marginBottom: "12px",
+  cursor: "pointer",
+};
+
+const titleTextStyle = {
+  fontSize: "22px",
+  fontWeight: 600,
+  margin: 0,
+};
+
+function ForumTitle({ forumid, forumtitle, isLoggedIn, isRankForum }) {
   const navigate = useNavigate();
-  
-  return(
-    <>
-      <div className='wrap title' style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h2 style={{ fontSize: "24px", margin: 0 }}>{forumtitle}</h2>
-        {isLoggedIn && <Button onClick={()=>{navigate(`write`)}}>글 작성</Button>}
-      </div>
-      <hr></hr>
-    </>
-  )
+
+  return (
+    <div className="wrap" style={titleStyle} onClick={() => navigate(`/forum/${forumid}`)}>
+      <h2 style={titleTextStyle}>{forumtitle}</h2>
+      {isLoggedIn && !isRankForum && (
+        <Button onClick={(e) => {e.stopPropagation(); navigate(`/forum/${forumid}/write`);}}>글 작성</Button>
+      )}
+    </div>
+  );
 }
 
-export default ForumTitle
+export default ForumTitle;
