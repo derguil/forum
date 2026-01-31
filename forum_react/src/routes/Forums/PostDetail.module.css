@@ -1,5 +1,8 @@
-.postdetailWrap {
-  width: 100%;
+.grid18 {
+  display: grid;
+  /* justify-content: center; */
+  grid-template-columns: repeat(18, minmax(50px, 1fr));
+  gap: 20px;
 }
 
 .postCard {

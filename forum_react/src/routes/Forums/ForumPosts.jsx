@@ -3,7 +3,8 @@ import { useParams, useNavigate, Link, Outlet, useSearchParams } from 'react-rou
 import { Button, Container, Nav, Navbar, Row, Col, ListGroup, NavDropdown, Image, Card, Pagination }  from 'react-bootstrap';
 import axios from 'axios';
 import ForumTitle from './ForumTitle';
-import SidePostsBar from './BestPosts/SidePostsBar'
+import SidePostsBar from './sideMenu/SidePostsBar'
+import MySideBar from './sideMenu/MySideBar'
 import { useSelector } from "react-redux";
 import styles from "./ForumPosts.module.css"
 
@@ -34,7 +35,7 @@ function ForumPosts() {
   let [posts, setPosts] = useState([])
   let [postCount, setPostCount] = useState(0)
   const [loading, setLoading] = useState(true);
-  const { forumid } = useParams()
+  const { forumid, tab } = useParams()
 
   const [searchParams, setSearchParams] = useSearchParams();
   const currPage = Number(searchParams.get("p") || 1);
@@ -42,14 +43,27 @@ function ForumPosts() {
   const isRankForum = (forumid === "6979d19e7302ac81bff9a61b" || forumid === "6979d1a87302ac81bff9a61c");
 
   useEffect(() => {
-    axios.get("/api/reqForum", { params: { forumid } })
-      .then(res => setForum(res.data.forum))
-      .catch(console.log);
-  }, [forumid]);
+    if (!tab && forumid) {
+      axios.get("/api/reqForum", { params: { forumid } })
+        .then(res => setForum(res.data.forum))
+        .catch(console.log);
+    }
+  }, [forumid, tab]);
 
   useEffect(() => {
     setLoading(true);
-    if(forumid === "6979d19e7302ac81bff9a61b") { //hot게시판
+    
+    if (tab) {
+      axios.get("/api/reqUserActivity", {
+        params: { tab, currPage, limit }
+      })
+      .then(res => {
+        setPosts(res.data.posts);
+        setPostCount(res.data.totalPostsCount);
+      })
+      .catch(console.log)
+      .finally(() => setLoading(false));
+    } else if(forumid === "6979d19e7302ac81bff9a61b") { //hot게시판
         axios.get("/api/reqHotPosts", {
           params: { currPage, limit }
         })
@@ -80,19 +94,46 @@ function ForumPosts() {
       .catch(console.log)
       .finally(() => setLoading(false));
     }
-  }, [forumid, currPage]);
+  }, [forumid, currPage, tab]);
 
   const authUserId = useSelector(state => state.auth.user?._id);
   const isLoggedIn = !!authUserId;
   
+  const getTabTitle = () => {
+    switch(tab) {
+      case 'posts': return '내가 쓴 글';
+      case 'comments': return '댓글 단 글';
+      case 'scraps': return '내 스크랩';
+      default: return '';
+    }
+  };
+  
   if (loading) return <div style={{ padding: '0 15px' }}>로딩중...</div>
   
   return (
-    <Container fluid className="ForumPosts-wrap">
-      <Row className="justify-content-center">
-        <Col xs={12} md={7} lg={7}>
-          <div id="container" className={styles.articles}>
-            <ForumTitle forumid={forumid} forumtitle={forum.title} isLoggedIn={isLoggedIn} isRankForum={isRankForum}></ForumTitle>
+    <>
+      <div className={styles.grid18}>
+        {isLoggedIn && (
+          <div style={{ gridColumn: "3 / span 2" }}>
+            <MySideBar />
+          </div>
+        )}
+
+        <div
+          style={{
+            gridColumn: isLoggedIn
+              ? "5 / span 8"   // 로그인 O
+              : "3 / span 10"  // 로그인 X → 왼쪽 당겨오기
+          }}
+        >
+          <div id="container" className={styles.article}>
+            {tab ? (
+              <div className={`wrap ${styles.tabHeader}`}>
+                <h2>{getTabTitle()}</h2>
+              </div>
+            ) : (
+              <ForumTitle forumid={forumid} forumtitle={forum.title} isLoggedIn={isLoggedIn} isRankForum={isRankForum}></ForumTitle>
+            )}
             {postCount === 0 &&
               <div className="wrap" style={emptyStyle}>
                 <h2 style={emptyTextStyle}>게시글을 찾을 수 없습니다.</h2>
@@ -108,19 +149,15 @@ function ForumPosts() {
               }
             </div>
           </div>
-        </Col>
-        <Col xs={12} md={3} lg={3}>
+        </div>
+        <div style={{ gridColumn: "span 4" }}>
           <SidePostsBar></SidePostsBar>
-        </Col>
-      </Row>
-      <Row className="justify-content-center">
-        <Col xs={12}>
-          <div className={styles.paginationWrap}>
-            <PagiNation postCount={postCount} currPage={currPage} limit={limit} />
-          </div>
-        </Col>
-      </Row>
-    </Container>
+        </div>
+      </div>
+      <div className={styles.paginationWrap}>
+        <PagiNation postCount={postCount} currPage={currPage} limit={limit} />
+      </div>
+    </>
   )
 }
 

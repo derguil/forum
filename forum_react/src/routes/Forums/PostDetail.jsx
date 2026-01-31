@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Container, Row, Col, Image, Card, Form, InputGroup, Button } from "react-bootstrap";
 import axios from "axios";
 import ForumTitle from "./ForumTitle";
-import SidePostsBar from './BestPosts/SidePostsBar'
+import SidePostsBar from './sideMenu/SidePostsBar'
 import { useSelector } from "react-redux";
 import styles from "./PostDetail.module.css";
 
@@ -115,9 +115,9 @@ export default function PostDetail() {
   if (deleteloading) return <div className={styles.loadingOverlay}>삭제 중...</div>;
 
   return (
-    <Container fluid>
-      <Row className="justify-content-center">
-        <Col xs={12} md={7} lg={7}>
+    <>
+      <div className={styles.grid18}>
+        <div style={{ gridColumn: "3 / span 10" }}>
           <div className={styles.postdetailWrap}>
             <ForumTitle forumid={forumid} forumtitle={forum?.title} isLoggedIn={isLoggedIn} />
 
@@ -197,12 +197,13 @@ export default function PostDetail() {
               {isLoggedIn && <CommentWrite postid={postid} refetch={refetch} />}
             </div>
           </div>
-        </Col>
-        <Col xs={12} md={3} lg={3}>
-          <SidePostsBar></SidePostsBar>
-        </Col>
-      </Row>
-    </Container>
+        </div>
+
+        <div style={{ gridColumn: "span 4" }}>
+          <SidePostsBar />
+        </div>
+      </div>
+    </>
   );
 }
 

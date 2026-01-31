@@ -28,6 +28,179 @@ const upload = multer({
   })
 })
 
+router.get('/reqUserActivity', async (req, res) => {
+  const db = getDB("forumsData");
+  const userId = req.session.userId;
+  const tab = req.query.tab
+
+  // console.log(tab)
+  // posts
+  // comments
+  // scraps
+  const currPage = Number(req.query.currPage);
+  const limit = Number(req.query.limit);
+
+  const skip = (currPage - 1) * limit
+
+  let posts = [];
+  let totalPostsCount = 0;
+
+  switch (tab) {
+    case "posts": {
+      const result = await getPosts(userId, skip, limit)
+      posts = result.posts
+      totalPostsCount = result.totalPostsCount
+      break
+    }
+    case "comments": {
+      const result = await getComments(userId, skip, limit)
+      posts = result.posts
+      totalPostsCount = result.totalPostsCount
+      break
+    }
+    case "scraps": {
+      const result = await getScraps(userId, skip, limit)
+      posts = result.posts
+      totalPostsCount = result.totalPostsCount
+      break
+    }
+  }
+
+  async function getPosts(userId, skip, limit){
+    const posts = await db.collection('posts').aggregate([
+      { $match: 
+        { 
+          wby: new ObjectId(userId)
+        }
+      },
+      { $sort: { wtime: -1 } },
+  
+      { $skip: skip },
+      { $limit: limit },
+      { $lookup:
+        {
+          from: "users",
+          localField: "wby",
+          foreignField: "_id",
+          as: "written"
+        }
+      },
+      { $unwind:
+        {
+          path: "$written"
+        }
+      },
+      { $project:
+        { //lookup에서 필요한것만 가져오기로 성능 개선
+          "written._id": 0,
+          "written.profileImg": 0,
+          "written.scrapPosts": 0,
+          "written.email": 0,
+          "written.passwordHash": 0,
+          "written.createdAt": 0,
+        }
+      }
+    ]).toArray();
+
+    const totalPostsCount = await db.collection('posts').countDocuments(
+      { wby: new ObjectId(userId) }
+    )
+    
+    return { posts, totalPostsCount }
+  }
+
+  async function getComments(userId, skip, limit){
+    const comments = await db.collection("comments").find(
+      { wby: new ObjectId(userId) },
+      { projection: { parent_id: 1 } }
+    ).toArray();
+
+    if (comments.length === 0) {
+      return { posts: [], totalPostsCount: 0 };
+    }
+    const commentPostIds = [...new Set(comments.map(v => v.parent_id.toString()))].map(id => new ObjectId(id));
+
+    const posts = await db.collection('posts').aggregate([
+      { $match: { _id: { $in: commentPostIds } } },
+      { $sort: { wtime: -1 } },
+  
+      { $skip: skip },
+      { $limit: limit },
+      { $lookup:
+        {
+          from: "users",
+          localField: "wby",
+          foreignField: "_id",
+          as: "written"
+        }
+      },
+      { $unwind:
+        {
+          path: "$written"
+        }
+      },
+      { $project:
+        { //lookup에서 필요한것만 가져오기로 성능 개선
+          "written._id": 0,
+          "written.profileImg": 0,
+          "written.scrapPosts": 0,
+          "written.email": 0,
+          "written.passwordHash": 0,
+          "written.createdAt": 0,
+        }
+      }
+    ]).toArray();
+
+    const totalPostsCount = commentPostIds.length
+    
+    return { posts, totalPostsCount }
+  }
+
+  async function getScraps(userId, skip, limit){
+    const user = await db.collection("users").findOne(
+      { _id: new ObjectId(userId) },
+      { projection: { scrapPosts: 1 } }
+    );
+
+    const scrapPostIds = user?.scrapPosts ?? [];
+    if (scrapPostIds.length === 0) {
+      return { posts: [], totalPostsCount: 0 }; 
+    }
+
+    const posts = await db.collection("posts").aggregate([
+      { $match: { _id: { $in: scrapPostIds } } },
+      { $sort: { wtime: -1 } },
+      { $skip: skip },
+      { $limit: limit },
+      {
+        $lookup: {
+          from: "users",
+          localField: "wby",
+          foreignField: "_id",
+          as: "written",
+        }
+      },
+      { $unwind: "$written" },
+      {
+        $project: {
+          "written._id": 0,
+          "written.profileImg": 0,
+          "written.scrapPosts": 0,
+          "written.email": 0,
+          "written.passwordHash": 0,
+          "written.createdAt": 0,
+        }
+      }
+    ]).toArray();
+
+    const totalPostsCount = scrapPostIds.length;
+
+    return { posts, totalPostsCount };
+  }
+
+  res.send({ success: true, posts: posts, totalPostsCount: totalPostsCount });
+});
+
 router.get('/reqPosts', async (req, res) => {
   const db = getDB("forumsData");
   const forumid = req.query.forumid

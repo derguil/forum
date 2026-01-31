@@ -35,7 +35,7 @@ export default function SidePostsBar(){
       <div className={styles.Hotboard}>
         <h3 className={styles.article}>
           <div className={styles.titleNoCur}>
-            실시간 인기 글(공감 10개 이상 + 실시간 좋아요 증가량(1시간미다 집계))
+            실시간 인기 글
           </div>
         </h3>
         {
@@ -49,7 +49,7 @@ export default function SidePostsBar(){
       <div className={styles.Hotboard}>
         <Link to="/forum/6979d19e7302ac81bff9a61b" className={styles.article}>
           <h3 className={styles.title}>
-            HOT 게시물 (공감 10개 이상, 1주일 저장)
+            HOT 게시물
           </h3>
           <span>더 보기</span>
         </Link>
@@ -65,7 +65,7 @@ export default function SidePostsBar(){
       <div className={styles.Hotboard}>
         <Link to={`/forum/6979d1a87302ac81bff9a61c`} className={styles.article}>
           <h3 className={styles.title}>
-            BEST 게시판(공감 100개 이상, 영구 저장)
+            BEST 게시판
           </h3>
           <span>더 보기</span>
         </Link>

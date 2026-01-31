@@ -58,7 +58,49 @@ router.get('/reqHotPosts', async (req, res) => {
       }
     },
     { $unwind: "$hotPost" },
-    { $replaceRoot: { newRoot: "$hotPost" } }
+    { $replaceRoot: { newRoot: "$hotPost" } },
+    { $lookup:
+      {
+        from: "users",
+        localField: "wby",
+        foreignField: "_id",
+        as: "written"
+      }
+    },
+    { $unwind:
+      {
+        path: "$written"
+      }
+    },
+    { $project:  
+      {
+        "written._id": 0,
+        "written.profileImg": 0,
+        "written.scrapPosts": 0,
+        "written.email": 0,
+        "written.passwordHash": 0,
+        "written.createdAt": 0,
+      }
+    },
+    { $lookup:
+      {
+        from: "forums",
+        localField: "parent_id",
+        foreignField: "_id",
+        as: "forum"
+      }
+    },
+    { $unwind:
+      {
+        path: "$forum"
+      }
+    },
+    { $project:  
+      {
+        "forum._id": 0,
+        "forum.madeby": 0
+      }
+    }
   ]).toArray();
 
   const totalPostsCount = await db.collection('rankings').countDocuments(
@@ -95,7 +137,49 @@ router.get('/reqBestPosts', async (req, res) => {
       }
     },
     { $unwind: "$bestPost" },
-    { $replaceRoot: { newRoot: "$bestPost" } }
+    { $replaceRoot: { newRoot: "$bestPost" } },
+    { $lookup:
+      {
+        from: "users",
+        localField: "wby",
+        foreignField: "_id",
+        as: "written"
+      }
+    },
+    { $unwind:
+      {
+        path: "$written"
+      }
+    },
+    { $project:  
+      {
+        "written._id": 0,
+        "written.profileImg": 0,
+        "written.scrapPosts": 0,
+        "written.email": 0,
+        "written.passwordHash": 0,
+        "written.createdAt": 0,
+      }
+    },
+    { $lookup:
+      {
+        from: "forums",
+        localField: "parent_id",
+        foreignField: "_id",
+        as: "forum"
+      }
+    },
+    { $unwind:
+      {
+        path: "$forum"
+      }
+    },
+    { $project:  
+      {
+        "forum._id": 0,
+        "forum.madeby": 0
+      }
+    }
   ]).toArray();
 
   const totalPostsCount = await db.collection('rankings').countDocuments(

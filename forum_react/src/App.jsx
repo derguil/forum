@@ -62,7 +62,9 @@ function App() {
         <Route path="/forum" element={<ForumList />}>
           <Route path=":forumid" element={<ForumPosts />} />
           <Route path=":forumid/:postid" element={<PostDetail />} />
+          <Route path="my/:tab" element={<ReqAuth><ForumPosts /></ReqAuth>} />
         </Route>
+        
         <Route path="/forum/:forumid/write" element={<WritePostPage />} />
         <Route path="/forum/:forumid/:postid/edit" element={<EditPostPage />} />
         <Route path="/mypage" element={ <ReqAuth> <MyPage /> </ReqAuth> } />
