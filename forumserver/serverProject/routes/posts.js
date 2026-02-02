@@ -70,7 +70,7 @@ router.get('/reqUserActivity', async (req, res) => {
     const posts = await db.collection('posts').aggregate([
       { $match: 
         { 
-          wby: new ObjectId(userId)
+          wby: new ObjectId(userId), isDeleted: false
         }
       },
       { $sort: { wtime: -1 } },
@@ -99,11 +99,30 @@ router.get('/reqUserActivity', async (req, res) => {
           "written.passwordHash": 0,
           "written.createdAt": 0,
         }
+      },
+      { $lookup:
+        {
+          from: "forums",
+          localField: "parent_id",
+          foreignField: "_id",
+          as: "forum"
+        }
+      },
+      { $unwind:
+        {
+          path: "$forum"
+        }
+      },
+      { $project:  
+        {
+          "forum._id": 0,
+          "forum.madeby": 0
+        }
       }
     ]).toArray();
 
     const totalPostsCount = await db.collection('posts').countDocuments(
-      { wby: new ObjectId(userId) }
+      { wby: new ObjectId(userId), isDeleted: false }
     )
     
     return { posts, totalPostsCount }
@@ -111,7 +130,7 @@ router.get('/reqUserActivity', async (req, res) => {
 
   async function getComments(userId, skip, limit){
     const comments = await db.collection("comments").find(
-      { wby: new ObjectId(userId) },
+      { wby: new ObjectId(userId), isDeleted: false },
       { projection: { parent_id: 1 } }
     ).toArray();
 
@@ -147,6 +166,25 @@ router.get('/reqUserActivity', async (req, res) => {
           "written.email": 0,
           "written.passwordHash": 0,
           "written.createdAt": 0,
+        }
+      },
+      { $lookup:
+        {
+          from: "forums",
+          localField: "parent_id",
+          foreignField: "_id",
+          as: "forum"
+        }
+      },
+      { $unwind:
+        {
+          path: "$forum"
+        }
+      },
+      { $project:  
+        {
+          "forum._id": 0,
+          "forum.madeby": 0
         }
       }
     ]).toArray();
@@ -190,10 +228,31 @@ router.get('/reqUserActivity', async (req, res) => {
           "written.passwordHash": 0,
           "written.createdAt": 0,
         }
+      },
+      { $lookup:
+        {
+          from: "forums",
+          localField: "parent_id",
+          foreignField: "_id",
+          as: "forum"
+        }
+      },
+      { $unwind:
+        {
+          path: "$forum"
+        }
+      },
+      { $project:  
+        {
+          "forum._id": 0,
+          "forum.madeby": 0
+        }
       }
     ]).toArray();
 
-    const totalPostsCount = scrapPostIds.length;
+    const totalPostsCount = await db.collection('posts').countDocuments(
+      { _id: { $in: scrapPostIds } }
+    );
 
     return { posts, totalPostsCount };
   }
@@ -211,7 +270,7 @@ router.get('/reqPosts', async (req, res) => {
   const skip = (currPage - 1) * limit
 
   const posts = await db.collection('posts').aggregate([
-    { $match: { parent_id: new ObjectId(forumid) }},
+    { $match: { parent_id: new ObjectId(forumid), isDeleted: false }},
     { $sort: { wtime: -1 } },
 
     { $skip: skip },
@@ -241,7 +300,7 @@ router.get('/reqPosts', async (req, res) => {
     }
   ]).toArray();
   const totalPostsCount = await db.collection('posts').countDocuments(
-    { parent_id: new ObjectId(forumid) }
+    { parent_id: new ObjectId(forumid), isDeleted: false }
   )
   res.send({ success: true, posts: posts, totalPostsCount: totalPostsCount });
 });
@@ -251,7 +310,7 @@ router.get('/reqPost', async (req, res) => {
   const postid = req.query.postid;
 
   const [post] = await db.collection('posts').aggregate([
-    { $match: { _id: new ObjectId(postid) }},
+    { $match: { _id: new ObjectId(postid)}},
     { $lookup:
       {
         from: "users",
@@ -285,8 +344,7 @@ router.get('/reqPost', async (req, res) => {
         }
       }
     )
-  
-    isScrapped = sP.scrapPosts.some(id =>
+    isScrapped = sP && sP.scrapPosts && sP.scrapPosts.some(id =>
       id.equals(new ObjectId(postid))
     );
   }else{
@@ -327,7 +385,9 @@ router.post('/writePost', requireLogin, upload.array("images", 20), async (req, 
     commentCount: 0,
     voteCount: 0,
     scrapCount: 0,
-    updatedAt: new Date()
+    updatedAt: new Date(),
+    isDeleted: false,
+    deletedAt: null,
   });
 
   res.send({ success: true });
@@ -356,7 +416,7 @@ router.post("/editPost", requireLogin, upload.array("images", 20), async (req, r
   }));
 
   const finalImages = [...keepOldImages, ...newUploadedImages];
-  await db.collection("posts").updateOne(
+  await db.collection('posts').updateOne(
     { _id: new ObjectId(post_id), wby: new ObjectId(user_id) },
     {
       $set: {
@@ -400,27 +460,47 @@ router.delete('/post', requireLogin, async (req, res) => {
     return res.status(403).send({ message: "삭제 권한이 없습니다." });
   }
 
-  if (post.images.length > 0) {
-    for (const image of post.images) {
-      try {
-        await s3.send(new DeleteObjectCommand({
-          Bucket: 'derguil-post-img',
-          Key: image.img_key
-        }));
-      } catch (err) {
-        console.error('S3 삭제 에러:', image.img_key, err);
-      }
-    }
-  }
+  /////////////////////hard-delete//////////////////////////
 
-  await db.collection('posts').deleteOne({
-    _id: new ObjectId(post_id),
-    wby: new ObjectId(user_id),
-  });
+  // if (post.images.length > 0) {
+  //   for (const image of post.images) {
+  //     try {
+  //       await s3.send(new DeleteObjectCommand({
+  //         Bucket: 'derguil-post-img',
+  //         Key: image.img_key
+  //       }));
+  //     } catch (err) {
+  //       console.error('S3 삭제 에러:', image.img_key, err);
+  //     }
+  //   }
+  // }
 
-  await db.collection('comments').deleteMany({
-    parent_id: new ObjectId(post_id),
-  });
+  // await db.collection('posts').deleteOne({
+  //   _id: new ObjectId(post_id),
+  //   wby: new ObjectId(user_id),
+  // });
+
+  // await db.collection('comments').deleteMany({
+  //   parent_id: new ObjectId(post_id),
+  // });
+
+  /////////////////////soft-delete/////////////////////////
+
+  const postId = new ObjectId(post_id);
+
+  // soft-delete the post (keep S3 images for possible recovery)
+  await db.collection('posts').updateOne(
+    { _id: postId, wby: new ObjectId(user_id) },
+    { $set: { isDeleted: true, deletedAt: new Date() } }
+  );
+
+  // // soft-delete comments under the post
+  // await db.collection('comments').updateMany(
+  //   { parent_id: postId },
+  //   { $set: { isDeleted: true, deletedAt: new Date() } }
+  // );
+
+  ///////////////////////////////////////////////
 
   res.send({ success: true });
 });

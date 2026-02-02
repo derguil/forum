@@ -55,6 +55,7 @@ router.post("/register", async (req, res) => {
       img_URL: DEFAULT_PROFILE_IMG.img_URL,
     },
     passwordHash,
+    scrapPosts: [],
     createdAt: new Date(),
   });
 

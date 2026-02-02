@@ -6,8 +6,10 @@ import ForumTitle from "./ForumTitle";
 import SidePostsBar from './sideMenu/SidePostsBar'
 import { useSelector } from "react-redux";
 import styles from "./PostDetail.module.css";
+import accountImg from "../../assets/6e119ef1-b710-47a4-ba3e-181439671110.png";
 
 export default function PostDetail() {
+  const navigate = useNavigate()
   const { forumid, postid } = useParams();
   const authUserId = useSelector((s) => s.auth.user?._id);
   const isLoggedIn = !!authUserId;
@@ -33,12 +35,20 @@ export default function PostDetail() {
       axios.get("/api/reqComments", { params: { postid } }),
     ])
       .then(([forumRes, postRes, commentsRes]) => {
+        const postData = postRes.data.post;
+
+        if (postData?.isDeleted) {
+          alert("삭제된 글입니다.");
+          navigate(`/forum/${forumid}`, { replace: true });
+          return;
+        }
+
         setForum(forumRes.data.forum || {});
-        setPost(postRes.data.post || {});
+        setPost(postData || {});
         setIsScrapped(postRes.data.isScrapped);
         setComments(commentsRes.data.comments || []);
       })
-      .catch((err) => console.log(err))
+      .catch(console.log)
       .finally(() => setLoading(false));
   }, [forumid, postid, refresh]);
 
@@ -113,7 +123,7 @@ export default function PostDetail() {
 
   if (loading) return <div className={styles.loadingOverlay}>로딩 중...</div>;
   if (deleteloading) return <div className={styles.loadingOverlay}>삭제 중...</div>;
-
+  console.log(post)
   return (
     <>
       <div className={styles.grid18}>
@@ -281,46 +291,63 @@ function CommentItem({ comment, postid, refetch, setDeleteloading }) {
   const isOwn = String(authUserId) === String(comment?.wby);
 
   const wby = comment?.written?.username ?? "알 수 없음";
-  const wbyimg = comment?.written?.profileImg?.img_URL;
+  const wbyimg = comment?.isDeleted ? accountImg : (comment?.written?.profileImg?.img_URL || accountImg);
   const wtime = comment?.wtime ? timeAgo(comment.wtime) : "";
 
   return (
     <Card style={{ maxWidth: "2000px", width: "100%", margin: "0 auto", borderRadius: 0 }}>
       <Card.Body>
-        <div className={styles.postdetailCommentHeader}>
-          <div className={styles.postdetailCommentProfile}>
-            <img src={wbyimg} className={styles.postdetailCommentPicture} alt="profile" />
-            <h3 className={styles.postdetailCommentText}>{wby}</h3>
-          </div>
+        { 
+          comment.isDeleted ? 
+          <>
+            <div className={styles.postdetailCommentHeader}>
+              <div className={styles.postdetailCommentProfile}>
+                <img src={wbyimg} className={styles.postdetailCommentPicture} alt="profile" />
+                <h3 className={styles.postdetailCommentText}>(삭제)</h3>
+              </div>
+            </div>
+            <div className={styles.postdetailCommentMainText}>
+              삭제된 댓글입니다.
+            </div>
+          </>
+          :
+          <>
+            <div className={styles.postdetailCommentHeader}>
+              <div className={styles.postdetailCommentProfile}>
+                <img src={wbyimg} className={styles.postdetailCommentPicture} alt="profile" />
+                <h3 className={styles.postdetailCommentText}>{wby}</h3>
+              </div>
 
-          <div className={styles.postdetailRightActions}>
-            {isOwn && isLoggedIn && (
-              <button
-                className={`${styles.postdetailBtn} ${styles.postdetailBtnSm}`}
-                onClick={() => {
-                  const ok = window.confirm("이 댓글을 삭제하시겠습니까?");
-                  if (!ok) return;
+              <div className={styles.postdetailRightActions}>
+                {isOwn && isLoggedIn && (
+                  <button
+                    className={`${styles.postdetailBtn} ${styles.postdetailBtnSm}`}
+                    onClick={() => {
+                      const ok = window.confirm("이 댓글을 삭제하시겠습니까?");
+                      if (!ok) return;
 
-                  setDeleteloading(true);
+                      setDeleteloading(true);
 
-                  axios
-                    .delete("/api/comment", {
-                      params: { comment_id: comment._id, postid },
-                    })
-                    .then(() => refetch())
-                    .catch((err) => alert(err.response?.data?.message || "삭제 실패"))
-                    .finally(() => setDeleteloading(false));
-                }}
-              >
-                삭제
-              </button>
-            )}
-          </div>
-        </div>
-        <div className={styles.postdetailCommentMainText}>
-          {comment?.comment}
-        </div>
-        <time className={styles.postdetailCommentText}>{wtime}</time>
+                      axios
+                        .delete("/api/comment", {
+                          params: { comment_id: comment._id, postid },
+                        })
+                        .then(() => refetch())
+                        .catch((err) => alert(err.response?.data?.message || "삭제 실패"))
+                        .finally(() => setDeleteloading(false));
+                    }}
+                  >
+                    삭제
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className={styles.postdetailCommentMainText}>
+              {comment?.comment}
+            </div>
+            <time className={styles.postdetailCommentText}>{wtime}</time>
+          </>
+        }
       </Card.Body>
     </Card>
   );

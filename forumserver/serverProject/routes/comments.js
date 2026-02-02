@@ -44,7 +44,9 @@ router.post('/writeComment', requireLogin, async (req, res) => {
     parent_id: new ObjectId(parent_id),
     comment,
     wtime: new Date(),
-    wby: new ObjectId(user_id)
+    wby: new ObjectId(user_id),
+    isDeleted: false,
+    deletedAt: null,
   });
 
   await db.collection('posts').updateOne(
@@ -61,19 +63,25 @@ router.delete('/comment', requireLogin, async (req, res) => {
   const db = getDB("forumsData");
   const { comment_id, postid } = req.query;
 
-  await db.collection('comments').deleteOne({
-    _id: new ObjectId(comment_id)
-  });
+  const comment = await db.collection('comments').findOne({ _id: new ObjectId(comment_id) });
+  if (!comment) {
+    return res.status(404).json({ success: false, message: '댓글을 찾을 수 없습니다.' });
+  }
+  if (comment.isDeleted) {
+    return res.status(400).json({ success: false, message: '이미 삭제된 댓글입니다.' });
+  }
+
+  await db.collection('comments').updateOne(
+    { _id: new ObjectId(comment_id) },
+    { $set: { isDeleted: true, deletedAt: new Date() } }
+  );
 
   await db.collection('posts').updateOne(
     { _id: new ObjectId(postid) },
-    {
-      $inc: { commentCount: -1 }
-    }
+    { $inc: { commentCount: -1 } }
   );
 
-
   res.send({ success: true });
-})
+});
  
 module.exports = router;

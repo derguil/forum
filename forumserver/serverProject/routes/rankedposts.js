@@ -8,6 +8,7 @@ router.get('/reqTrendPosts', async (req, res) => {
 
   const trendposts = await db.collection('trends').aggregate([
     { $replaceRoot: { newRoot: "$post" } },
+    { $match: { isDeleted: false } },
     { $lookup:
       {
         from: "forums",
@@ -59,6 +60,7 @@ router.get('/reqHotPosts', async (req, res) => {
     },
     { $unwind: "$hotPost" },
     { $replaceRoot: { newRoot: "$hotPost" } },
+    { $match: { isDeleted: false } },
     { $lookup:
       {
         from: "users",
@@ -138,6 +140,7 @@ router.get('/reqBestPosts', async (req, res) => {
     },
     { $unwind: "$bestPost" },
     { $replaceRoot: { newRoot: "$bestPost" } },
+    { $match: { isDeleted: false } },
     { $lookup:
       {
         from: "users",
