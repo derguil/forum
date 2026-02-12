@@ -1,0 +1,3 @@
+.postCard:global(.card) {
+  border-radius: 0;
+}

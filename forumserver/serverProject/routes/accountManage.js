@@ -75,6 +75,8 @@ router.post("/login", async (req, res) => {
   req.session.userId = user._id.toString(); //serializeUser
   const { passwordHash, ...safeUser } = user;
 
+  // console.log(safeUser)
+
   res.json({
     success: true,
     message: "로그인 성공",
