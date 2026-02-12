@@ -1,36 +1,83 @@
 import { useEffect, useState, useRef } from "react";
+import type { ChangeEvent } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Container, Row, Col, Card, Form, Button, Image, Modal } from "react-bootstrap";
 import addBtnImg from "./../../assets/container.articles.write.thumbnails.new.png";
 import axios from "axios";
-import "./WritePostPage.css"
+import "./EditPostPage.css";
+import type { ApiSuccess, PostImage, ReqPostResponse } from "../../types/api";
 
-function WritePostPage() {
+type Post = {
+  title?: string;
+  content?: string;
+  images?: PostImage[];
+};
+
+type Attachment = {
+  id: string;
+  file: File | null;
+  url: string;
+  img_key?: string;
+};
+
+function EditPostPage() {
   const MAX_IMAGES = 20;
 
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const { forumid } = useParams();
+  const { forumid, postid } = useParams<{ forumid?: string; postid?: string }>();
 
+  const [post, setPost] = useState<Post | null>(null);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
 
-  const [attachments, setAttachments] = useState([]); // [{ id, file, url }]
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
 
-  const fileInputRef = useRef(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedId, setSelectedId] = useState(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!postid) return;
+    axios
+      .get<ReqPostResponse>("/api/reqPost", { params: { postid } })
+      .then((postRes) => {
+        const postData = postRes.data.post as Post;
+        setPost(postData);
+        setTitle(postData.title || "");
+        setContent(postData.content || "");
+        if (postData?.images?.length) {
+          convertImg(postData);
+        }
+      })
+      .catch((err) => console.log(err));
+  }, [postid]);
+
+  const convertImg = (postData: Post) => {
+    if (!postData?.images) return;
+
+    const converted = postData.images.map((img) => ({
+      id: `${crypto?.randomUUID ? crypto.randomUUID() : Date.now() + Math.random()}`,
+      file: null,
+      url: img.img_URL,
+      img_key: img.img_key,
+    }));
+
+    setAttachments(converted);
+  };
 
   useEffect(() => {
     return () => {
       attachments.forEach((a) => {
-        if (a?.url) URL.revokeObjectURL(a.url);
+        if (typeof a?.url === "string" && a.url.startsWith("blob:")) {
+          URL.revokeObjectURL(a.url);
+        }
       });
     };
   }, [attachments]);
 
-  const openDeleteModal = (id) => {
+  const openDeleteModal = (id: string) => {
     setSelectedId(id);
     setShowDeleteModal(true);
   };
@@ -45,7 +92,7 @@ function WritePostPage() {
 
     setAttachments((prev) => {
       const target = prev.find((a) => a.id === selectedId);
-      if (target?.url) URL.revokeObjectURL(target.url);
+      if (target?.url?.startsWith("blob:")) URL.revokeObjectURL(target.url);
 
       return prev.filter((a) => a.id !== selectedId);
     });
@@ -53,7 +100,7 @@ function WritePostPage() {
     closeDeleteModal();
   };
 
-  const handleImageChange = (e) => {
+  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
@@ -64,10 +111,10 @@ function WritePostPage() {
       return;
     }
 
-    const newOnes = files.map((file) => ({
+    const newOnes: Attachment[] = files.map((file) => ({
       id: `${crypto?.randomUUID ? crypto.randomUUID() : Date.now() + Math.random()}`,
       file,
-      url: URL.createObjectURL(file), //Blob
+      url: URL.createObjectURL(file),
     }));
 
     setAttachments((prev) => [...prev, ...newOnes]);
@@ -75,56 +122,76 @@ function WritePostPage() {
     e.target.value = "";
   };
 
+  const keepOldImages = attachments
+    .filter((a) => !a.file && a.img_key)
+    .map((a) => ({
+      img_key: a.img_key,
+      img_URL: a.url,
+    }));
+
+  const newFiles = attachments.filter((a) => a.file).map((a) => a.file as File);
+
+  const originalKeys = (post?.images || []).map((img) => img.img_key);
+  const keepKeys = new Set(keepOldImages.map((img) => img.img_key));
+  const removedOldKeys = originalKeys.filter((k) => !keepKeys.has(k));
+
   const handlePostSubmit = () => {
-    if (!title || !content) {
-      alert("제목과 내용을 입력하세요.");
+    if (!forumid || !postid) {
+      alert("잘못된 접근입니다.");
       return;
     }
     if (attachments.length > MAX_IMAGES) {
       alert(`이미지는 최대 ${MAX_IMAGES}장까지 업로드할 수 있습니다.`);
       return;
     }
-    
+    if (!title || !content) {
+      alert("제목과 내용을 입력하세요.");
+      return;
+    }
+
     if (loading) return;
 
     const formData = new FormData();
     formData.append("parent_id", forumid);
+    formData.append("post_id", postid);
     formData.append("title", title);
     formData.append("content", content);
 
-    attachments.forEach((a) => {
-      formData.append("images", a.file);
-    });
+    formData.append("keepOldImages", JSON.stringify(keepOldImages));
+    formData.append("removedOldKeys", JSON.stringify(removedOldKeys));
+
+    newFiles.forEach((file) => formData.append("images", file));
 
     setLoading(true);
 
-    axios.post("/api/writePost", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    })
-    .then((res) => {
-      console.log("작성 성공:", res.data);
-      navigate(`/forum/${forumid}`);
-    })
-    .catch((err) => {
-      alert(err.response?.data?.message || "작성 중 오류 발생");
-      if (err.response?.status === 401) {
-        navigate("/login");
-      }
-    })
-    .finally(() => {
-      setLoading(false);
-    });
+    axios
+      .post<ApiSuccess>("/api/editPost", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
+      .then((res) => {
+        console.log("수정 성공:", res.data);
+        navigate(`/forum/${forumid}`);
+      })
+      .catch((err) => {
+        alert(err.response?.data?.message || "수정 중 오류 발생");
+        if (err.response?.status === 401) {
+          navigate("/login");
+        }
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   };
 
-  if (loading) return <div className="loading-overlay">업로드 중...</div>
+  if (loading) return <div className="loading-overlay">수정 중...</div>;
 
   return (
-    <Container className="mt-4 writepost">
+    <Container className="mt-4 editpost">
       <Row className="justify-content-center">
         <Col md={8} lg={7}>
-          <Card className="writepost-card">
+          <Card className="editpost-card">
             <Card.Header>
-              <h5 className="mb-0">글쓰기</h5>
+              <h5 className="mb-0">글 수정하기</h5>
             </Card.Header>
 
             <Card.Body>
@@ -162,23 +229,20 @@ function WritePostPage() {
                   onChange={handleImageChange}
                 />
 
-                <Row className="mt-3 writepost-grid">
+                <Row className="mt-3 editpost-grid">
                   {attachments.map((a) => (
                     <Col xs={4} md={2} key={a.id} className="mb-2">
                       <Image
                         src={a.url}
-                        className="writepost-thumb"
+                        className="editpost-thumb"
                         onClick={() => openDeleteModal(a.id)}
                       />
                     </Col>
                   ))}
 
                   <Col xs={4} md={2} className="mb-2">
-                    <div
-                      onClick={() => fileInputRef.current?.click()}
-                      className="writepost-addbox"
-                    >
-                      <Image src={addBtnImg} className="writepost-addicon" />
+                    <div onClick={() => fileInputRef.current?.click()} className="editpost-addbox">
+                      <Image src={addBtnImg} className="editpost-addicon" />
                     </div>
                   </Col>
                 </Row>
@@ -202,10 +266,10 @@ function WritePostPage() {
 
             <Card.Footer className="d-flex justify-content-between">
               <Button variant="outline-secondary" onClick={() => navigate(`/forum/${forumid}`)}>
-                글쓰기 취소
+                글수정 취소
               </Button>
               <Button variant="primary" onClick={handlePostSubmit}>
-                작성
+                수정
               </Button>
             </Card.Footer>
           </Card>
@@ -215,4 +279,4 @@ function WritePostPage() {
   );
 }
 
-export default WritePostPage;
+export default EditPostPage;

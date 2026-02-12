@@ -7,7 +7,7 @@ export type User = {
   _id: string;
   username: string;
   email: string;
-  profileImg: ProfileImage | null;
+  profileImg: ProfileImage;
   createdAt: string;
   scrapPosts: string[];
 };

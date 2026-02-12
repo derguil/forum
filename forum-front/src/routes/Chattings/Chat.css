@@ -8,7 +8,7 @@
 }
 
 .chat-card-header {
-  background: #fff;
+  background: var(--bs-card-cap-bg);
   border-bottom: 1px solid #eee;
   height: 48px; 
 }

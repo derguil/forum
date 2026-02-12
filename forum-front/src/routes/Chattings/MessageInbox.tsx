@@ -1,7 +1,14 @@
-import { ListGroup, Badge } from "react-bootstrap";
-import './MessageInbox.css'
+import { ListGroup } from "react-bootstrap";
+import type { ThreadPreview } from "../../types/api";
+import "./MessageInbox.css";
 
-function formatMMDD_HHMM(date) {
+type MessageInboxProps = {
+  threads: ThreadPreview[];
+  activeThreadId?: string;
+  onSelect: (threadId: string) => void;
+};
+
+function formatMMDD_HHMM(date: string | number | Date) {
   const d = new Date(date);
 
   const MM = String(d.getMonth() + 1).padStart(2, "0");
@@ -12,7 +19,7 @@ function formatMMDD_HHMM(date) {
   return `${MM}/${DD} ${HH}:${mm}`;
 }
 
-export default function MessageInbox({ threads, activeThreadId, onSelect }) {
+export default function MessageInbox({ threads, activeThreadId, onSelect }: MessageInboxProps) {
   const isEmpty = !threads || threads.length === 0;
   return (
     <div className="inbox-wrap">
@@ -27,12 +34,6 @@ export default function MessageInbox({ threads, activeThreadId, onSelect }) {
             const active = String(t._id) === String(activeThreadId);
 
             return (
-              // <ListGroup.Item
-              //   key={idx}
-              //   action
-              //   onClick={() => onSelect(t._id)}
-              //   // className={`inbox-item ${active ? "active" : ""}`}
-              // >
               <div className={`thread ${active ? "active" : ""}`} key={idx} onClick={() => onSelect(t._id)}>
                 <div className="thread-main">
                   <div className="thread-top">
@@ -43,7 +44,6 @@ export default function MessageInbox({ threads, activeThreadId, onSelect }) {
                 </div>
                 {t.myUnreadCount > 0 && <div className="badge">{t.myUnreadCount}</div>}
               </div>
-              // </ListGroup.Item>
             );
           })}
         </ListGroup>

@@ -1,30 +1,31 @@
 import { createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
+import type { ChatMessage, ThreadPreview } from "../types/api";
 
 type ChatState = {
-  threads: [];
-  threadChats: {};
+  threads: ThreadPreview[];
+  threadChats: Record<string, ChatMessage[]>;
 };
 
 const initialState: ChatState = {
-  user: null,
-  loaded: false
+  threads: [],
+  threadChats: {},
 };
 
 const chatSlice = createSlice({
   name: "chat",
   initialState,
   reducers: {
-    setThreads(state, action) {
+    setThreads(state, action: PayloadAction<ThreadPreview[]>) {
       state.threads = action.payload;
     },
 
-    setMessages(state, action) {
+    setMessages(state, action: PayloadAction<{ threadid: string; messages: ChatMessage[] }>) {
       const { threadid, messages } = action.payload;
       state.threadChats[threadid] = messages;
     },
 
-    addMessage(state, action) {
+    addMessage(state, action: PayloadAction<{ threadid: string; message: ChatMessage }>) {
       const { threadid, message } = action.payload;
       if (!state.threadChats[threadid]) {
         state.threadChats[threadid] = [];
@@ -32,7 +33,15 @@ const chatSlice = createSlice({
       state.threadChats[threadid].push(message);
     },
 
-    updateThreadPreview(state, action) {
+    updateThreadPreview(
+      state,
+      action: PayloadAction<{
+        threadid: string;
+        lastMessage: string;
+        updatedAt: string;
+        unreadDelta: number;
+      }>
+    ) {
       const { threadid, lastMessage, updatedAt, unreadDelta } = action.payload;
 
       const idx = state.threads.findIndex(t => String(t._id) === String(threadid));
@@ -41,13 +50,13 @@ const chatSlice = createSlice({
       const t = state.threads[idx];
       t.lastMessage = lastMessage;
       t.updatedAt = updatedAt;
-      t.myUnreadCount += unreadDelta;
+      t.myUnreadCount = (t.myUnreadCount || 0) + unreadDelta;
 
       state.threads.splice(idx, 1);
       state.threads.unshift(t);
     },
 
-    markThreadRead(state, action) {
+    markThreadRead(state, action: PayloadAction<{ _id: string }>) {
       const { _id } = action.payload;
       const t = state.threads.find(
         (x) => String(x._id) === String(_id)

@@ -22,7 +22,7 @@ const tsport = process.env.TSPORT;
 
 
 app.use(cors({
-  origin: `http://localhost:${jsport}`,
+  origin: `http://localhost:${tsport}`,
   credentials: true,
 }));
 
@@ -45,7 +45,7 @@ app.use(sessionMiddleware)
 
 const io = new Server(server, {
   cors: {
-    origin: `http://localhost:${jsport}`,
+    origin: `http://localhost:${tsport}`,
     methods: ["GET", "POST"],
     credentials: true,
   },
