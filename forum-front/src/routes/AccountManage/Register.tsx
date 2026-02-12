@@ -1,17 +1,25 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate } from "react-router-dom";
 import { Container, Row, Col, Card, Form, Button } from "react-bootstrap";
+import { useAppDispatch } from "../../store/Hooks";
 import axios from 'axios';
+import { clearUser } from "../../store/authSlice"
+
+type RegisterResponse = {
+  success: boolean;
+  message: string;
+};
 
 function Register() {
   let navigate = useNavigate()
+  const dispatch = useAppDispatch();
 
-  const [username, setUsername] = useState("")
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [password2, setPassword2] = useState("")
+  const [username, setUsername] = useState<string>("")
+  const [email, setEmail] = useState<string>("")
+  const [password, setPassword] = useState<string>("")
+  const [password2, setPassword2] = useState<string>("")
 
-  const handleRegister = () => {
+  const handleRegister = async (): Promise<void> => {
     if (!username || !email || !password || !password2) {
       alert("필수값 누락");
       return;
@@ -20,21 +28,28 @@ function Register() {
       alert("비밀번호가 일치하지 않습니다");
       return;
     }
-    axios.post("/api/auth/register", {
-      username,
-      email,
-      password,
-      password2
-    })
-    .then(res => {
-      console.log("msg:", res.data);
+
+    try {
+      const res = await axios.post<RegisterResponse>("/api/auth/register", {
+        username,
+        email,
+        password,
+        password2
+      })
+      
       alert(res.data.message);
       navigate("/login");
-    })
-    .catch(err => {
+    } catch (err: unknown) {
       console.error(err);
-      alert(err.response?.data?.message || "작성 중 오류 발생");
-    });
+      dispatch(clearUser());
+
+      const message =
+        axios.isAxiosError(err) && typeof err.response?.data?.message === "string"
+          ? err.response.data.message
+          : null;
+
+      alert(message || "회원가입 중 오류 발생");
+    }
   };
 
   return (

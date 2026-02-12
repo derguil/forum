@@ -9,7 +9,7 @@ import type { User } from "../../types/user";
 type LoginResponse = {
   success: boolean;
   message: string;
-  user: User;
+  user?: User;
 };
 
 function Login() {
@@ -31,7 +31,20 @@ function Login() {
         password,
       });
 
-      dispatch(setUser(res.data.user));
+      if (!res.data.success) {
+        if (!res.data.user) {
+          dispatch(clearUser());
+          alert("유저 정보 없음");
+          return;
+        }
+        dispatch(clearUser());
+        alert(res.data.message || "로그인 실패");
+        return;
+      }
+
+      if (res.data.user) {
+        dispatch(setUser(res.data.user));
+      }
       navigate("/forum");
     } catch (err: unknown) {
       console.error(err);

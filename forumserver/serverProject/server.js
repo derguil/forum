@@ -16,10 +16,13 @@ const { startCron } = require("./worker.js")
 const app = express();
 const server = http.createServer(app);
 const port = process.env.PORT;
+const jsport = process.env.JSPORT;
+const tsport = process.env.TSPORT;
+
 
 
 app.use(cors({
-  origin: "http://localhost:5174",
+  origin: `http://localhost:${jsport}`,
   credentials: true,
 }));
 
@@ -42,7 +45,7 @@ app.use(sessionMiddleware)
 
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5174",
+    origin: `http://localhost:${jsport}`,
     methods: ["GET", "POST"],
     credentials: true,
   },
