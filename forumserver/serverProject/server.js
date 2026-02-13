@@ -36,7 +36,7 @@ const sessionMiddleware = session({
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
-    secure: false,     // 배포(HTTPS면) true
+    secure: true,     // 배포(HTTPS면) true
     sameSite: "lax",
     maxAge: 1000 * 60 * 60 * 2,
   },
