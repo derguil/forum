@@ -97,15 +97,10 @@ app.use("/api", require("./routes/socketIOchattings"));
     await connectDB();
     startCron()
     
-    if(!isProd){
-      server.listen(port, () => {
-        console.log(`http://localhost:${port} 에서 서버 실행중`)
-      });
-    } else {
-      server.listen(port, "127.0.0.1", () => {
-        console.log(`배포 환경에서 포트 ${port}로 서버 실행중`)
-      });
-    }
+    server.listen(port, isProd ? "127.0.0.1" : undefined, () => {
+      const addr = server.address();
+      console.log("LISTENING:", addr, port); // { address: '127.0.0.1' or '::' , family, port }
+    });
   } catch (error) {
     console.error("서버 시작 실패:", error);
     process.exit(1);
