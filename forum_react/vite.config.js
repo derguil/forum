@@ -13,7 +13,11 @@ const dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(file
 export default defineConfig({
   server: {
     proxy: {
-      '/api': 'http://localhost:8080' // proxy /api calls to backend
+      '/api': 'http://localhost:3000', // proxy /api calls to backend
+      "/socket.io": {
+        target: "http://localhost:3000",
+        ws: true,
+      },
     }
   },
   plugins: [react()],
