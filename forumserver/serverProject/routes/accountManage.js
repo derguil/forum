@@ -22,13 +22,13 @@ router.get("/me", requireLogin, async (req, res) => {
     );
 
     if (!user) {
-      return res.status(404).json({ message: "유저 없음" });
+      return res.status(404).json({ success: false, message: "유저 없음" });
     }
 
-    res.json({ user });
+    res.json({ success: true, message: "로그인됨",user });
   } catch (err) {
     console.error("GET /api/auth/me error:", err);
-    res.status(500).json({ message: "서버 오류" });
+    res.status(500).json({ success: false, message: "서버 오류" });
   }
 });
 
@@ -37,13 +37,13 @@ router.post("/register", async (req, res) => {
   const { username, email, password, password2 } = req.body;
 
   if (!username || !email || !password || !password2)
-    return res.status(400).json({ message: "필수값 누락" });
+    return res.status(400).json({ success: false, message: "필수값 누락" });
 
   if (password != password2)
-    return res.status(400).json({ message: "확인 비번 불일치" });
+    return res.status(400).json({ success: false, message: "확인 비번 불일치" });
 
   const exists = await db.collection("users").findOne({ username });
-  if (exists) return res.status(409).json({ message: "이미 존재하는 아이디" });
+  if (exists) return res.status(409).json({ success: false, message: "이미 존재하는 아이디" });
 
   const passwordHash = await bcrypt.hash(password, 10);
 
@@ -59,7 +59,10 @@ router.post("/register", async (req, res) => {
     createdAt: new Date(),
   });
 
-  res.json({ message: "회원가입 완료" });
+  res.json({ 
+    success: true,
+    message: "회원가입 완료"
+  });
 });
 
 router.post("/login", async (req, res) => {
@@ -67,13 +70,15 @@ router.post("/login", async (req, res) => {
   const { username, password } = req.body;
 
   const user = await db.collection("users").findOne({ username });
-  if (!user) return res.status(401).json({ message: "존재하지 않는 아이디" });
+  if (!user) return res.status(401).json({ success: false, message: "존재하지 않는 아이디" });
 
   const ok = await bcrypt.compare(password, user.passwordHash);
-  if (!ok) return res.status(401).json({ message: "비밀번호가 틀렸습니다" });
+  if (!ok) return res.status(401).json({ success: false, message: "비밀번호가 틀렸습니다" });
 
   req.session.userId = user._id.toString(); //serializeUser
   const { passwordHash, ...safeUser } = user;
+
+  // console.log(safeUser)
 
   res.json({
     success: true,
@@ -84,9 +89,12 @@ router.post("/login", async (req, res) => {
 
 router.post("/logout", requireLogin, (req, res) => {
   req.session.destroy((err) => {
-    if (err) return res.status(500).json({ message: "로그아웃 실패" });
+    if (err) return res.status(500).json({ success: false, message: "로그아웃 실패" });
     res.clearCookie("connect.sid");
-    res.json({ message: "로그아웃 완료" });
+    res.json({ 
+      success: true,
+      message: "로그아웃 완료" 
+    });
   });
 });
 

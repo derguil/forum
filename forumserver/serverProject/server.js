@@ -16,6 +16,9 @@ const { startCron } = require("./worker.js")
 const app = express();
 const server = http.createServer(app);
 const port = process.env.PORT;
+const jsport = process.env.JSPORT;
+const tsport = process.env.TSPORT;
+
 
 
 const isProd = process.env.NODE_ENV === "production";
