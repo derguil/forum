@@ -21,13 +21,16 @@ const tsport = process.env.TSPORT;
 
 
 
-app.use(cors({
-  origin: `http://localhost:${tsport}`,
-  credentials: true,
-}));
-
+const isProd = process.env.NODE_ENV === "production";
+if (!isProd) {
+  app.use(cors({
+    origin: `http://localhost:${port}`,
+    credentials: true,
+  }));
+}
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.set("trust proxy", 1);
 
 const sessionMiddleware = session({
   store: new RedisStore({ client: redisClient }),
@@ -44,12 +47,13 @@ const sessionMiddleware = session({
 app.use(sessionMiddleware)
 
 const io = new Server(server, {
-  cors: {
-    origin: `http://localhost:${tsport}`,
+  cors: !isProd ? {
+    origin: `http://localhost:${port}`,
     methods: ["GET", "POST"],
     credentials: true,
-  },
+  } : undefined,
 });
+
 io.use((socket, next) => {
   sessionMiddleware(socket.request, {}, next);
 });
@@ -60,7 +64,7 @@ io.use((socket, next) => {
   // socket.user = await users.findOne({ _id: new ObjectId(userId) });
   
   socket.userId = userId;
-  next();
+  next(); 
 });
 
 io.on("connection", (socket) => {
@@ -91,11 +95,17 @@ app.use("/api", require("./routes/chatting"));
 app.use("/api", require("./routes/socketIOchattings"));
 
 (async () => {
-  await redisClient.connect();
-  await connectDB();
-  startCron()
-  
-  server.listen(port, () => {
-    console.log(`http://localhost:${port} 에서 서버 실행중`)
-  });
+  try {
+    await redisClient.connect();
+    await connectDB();
+    startCron()
+    
+    server.listen(port, isProd ? "127.0.0.1" : undefined, () => {
+      const addr = server.address();
+      console.log("LISTENING:", addr, port); // { address: '127.0.0.1' or '::' , family, port }
+    });
+  } catch (error) {
+    console.error("서버 시작 실패:", error);
+    process.exit(1);
+  }
 })();

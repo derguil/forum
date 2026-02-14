@@ -15,7 +15,11 @@ export default defineConfig({
     port: 5174,
     strictPort: true, // 5174가 이미 사용 중이면 다른 포트로 안 넘어가고 에러
     proxy: {
-      '/api': 'http://localhost:8080' // proxy /api calls to backend
+      '/api': 'http://localhost:3000', // proxy /api calls to backend
+      "/socket.io": {
+        target: "http://localhost:3000",
+        ws: true,
+      },
     }
   },
   plugins: [react()],
