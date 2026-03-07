@@ -4,10 +4,8 @@ import { ExtractJwt, Strategy } from "passport-jwt";
 import { UserRepository } from "./user.repository";
 import { User } from '@prisma/client';
 
-export interface JwtPayload {
-  id: number;
-  iat: number;
-  exp: number;
+export type JwtPayload = {
+  id: number
 }
 
 @Injectable()
@@ -15,7 +13,7 @@ export class JwtAccessStrategy extends PassportStrategy(Strategy, 'jwt-access') 
   constructor(
       private readonly userRepository: UserRepository
   ) {
-    const secret = process.env.JWT_SECRET;
+    const secret = process.env.JWT_REFRESH_SECRET;
     if (!secret) {
       throw new Error('JWT_SECRET is not defined');
     }

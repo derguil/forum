@@ -1,8 +1,20 @@
 import { NestFactory } from '@nestjs/core';
+import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
+import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.setGlobalPrefix('api');
+  app.enableShutdownHooks();
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,//DTO에 정의되지 않은 필드는 자동으로 제거됨
+      forbidNonWhitelisted: true,//DTO에 없는 필드가 들어오면 아예 에러 발생
+      transform: true,//타입 자동 변환 //DTO에 타입이 정의되어 있을 때만 자동 변환됨
+    }),
+  );
+  app.use(cookieParser())
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();
