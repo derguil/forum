@@ -18,6 +18,7 @@ model User {
   username        String    @unique
   email           String    @unique
   passwordHash    String
+  hashedRefreshToken String?
   createdAt       DateTime  @default(now())
   profileImageKey String?
   profileImageUrl String?

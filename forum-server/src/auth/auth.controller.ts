@@ -1,20 +1,20 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Res } from '@nestjs/common';
-import type { Response } from 'express';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Res, Req, UnauthorizedException } from '@nestjs/common';
+import type { Response, Request } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from './get-user.decorator';
-import type { JwtPayload } from './jwt.strategy';
+import type { JwtAccessPayload, JwtRefreshPayload } from './jwt.strategy';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
   
   @Get('me')
-  @UseGuards(AuthGuard('jwt-access'))
-  getMe(@GetUser() jwtPayload: JwtPayload) {
-    return this.authService.getMe(jwtPayload.id);
+  @UseGuards(AuthGuard('jwt-access'))   
+  getMe(@GetUser() jwtAccessPayload: JwtAccessPayload) {
+    return this.authService.getMe(jwtAccessPayload.sub);
   }
 
   @Post('register')
@@ -31,26 +31,67 @@ export class AuthController {
     @Body() loginDto: LoginDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { accessToken } = await this.authService.login(loginDto);
+    const { accessToken, refreshToken } = await this.authService.login(loginDto);
 
-    res.cookie('access_token', accessToken, {
+    res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
       secure: false, // https에서만 (개발중이면 false 가능)
       sameSite: 'strict',
-      maxAge: 1000 * 60 * 15, // 15분 
+      // path: 'api/auth/refresh',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7일
     });
 
     return {
       success: true,
-      message: '로그인 성공'
+      message: '로그인 성공',
+      accessToken,
+    };
+  }
+
+  @Post('refresh')
+  @UseGuards(AuthGuard('jwt-refresh'))
+  async refresh(
+    @GetUser() jwtRefreshPayload: JwtRefreshPayload,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const refreshToken = req.cookies?.refresh_token;
+    const { accessToken, refreshToken: newRefreshToken } = await this.authService.refreshTokens(jwtRefreshPayload.sub, refreshToken);
+    // console.log(newRefreshToken)
+    res.cookie('refresh_token', newRefreshToken, {
+      httpOnly: true,
+      secure: false,
+      sameSite: 'lax',
+      // path: 'api/auth/refresh',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    return {
+      success: true,
+      message: 'access-token 재발급 성공',
+      accessToken,
     };
   }
   
-
-
-  // @UseGuards(AuthGuard('jwt-access'))
-  // @Post('logout')
-  // logout(@Body() id: string, @Body() updateAuthDto: UpdateAuthDto) {
-  //   return this.authService.logout(+id, updateAuthDto);
-  // }
+  @Post('logout')
+  @UseGuards(AuthGuard('jwt-refresh'))
+  async logout(
+    @GetUser() jwtRefreshPayload: JwtRefreshPayload,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const refreshToken = req.cookies?.refresh_token;
+    await this.authService.logout(jwtRefreshPayload.sub, refreshToken);
+  
+    res.clearCookie('refresh_token', {
+      httpOnly: true,
+      secure: false,
+      sameSite: 'lax',
+    });
+    
+    return {
+      success: true,
+      message: '로그아웃 성공'
+    };
+  }
 }
