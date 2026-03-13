@@ -32,7 +32,7 @@ model User {
 model Forum {
   id        Int       @id @default(autoincrement())
   userId    Int
-  title     String
+  title     String    @unique
   createdAt DateTime  @default(now())
 
   user      User      @relation(fields: [userId], references: [id])

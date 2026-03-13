@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../infra/prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 
 const userSelect = {
@@ -11,7 +11,7 @@ const userSelect = {
   createdAt: true,
   profileImageKey: true,
   profileImageUrl: true
-}
+} satisfies Prisma.UserSelect
 
 type UserRow = Prisma.UserGetPayload<{
   select: typeof userSelect;
@@ -53,8 +53,8 @@ export class UserRepository {
     });
   }
 
-  async updateRefreshTokenHash(userId: number, hashedRefreshToken: string | null): Promise<void> {
-    await this.prisma.user.update({
+  updateRefreshTokenHash(userId: number, hashedRefreshToken: string | null): Promise<UserRow> {
+    return this.prisma.user.update({
       where: { id: userId },
       data: { hashedRefreshToken },
     });

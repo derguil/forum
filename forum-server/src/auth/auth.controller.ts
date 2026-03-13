@@ -4,7 +4,7 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { AuthGuard } from '@nestjs/passport';
-import { GetUser } from './get-user.decorator';
+import { GetUser } from '../common/decoraters/get-user.decorator';
 import type { JwtAccessPayload, JwtRefreshPayload } from './jwt.strategy';
 
 @Controller('auth')

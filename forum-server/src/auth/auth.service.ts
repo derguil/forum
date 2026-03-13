@@ -2,8 +2,6 @@ import { Injectable, ConflictException, BadRequestException, UnauthorizedExcepti
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { UserRepository } from './user.repository';
-import { JwtService } from '@nestjs/jwt';
-import { User } from '@prisma/client';
 import { SafeUser } from './dto/safeuser.dto';
 import { AuthGenerateTokenService } from './auth.generate-token.service';
 import * as bcrypt from 'bcrypt';
@@ -12,7 +10,6 @@ import * as bcrypt from 'bcrypt';
 export class AuthService {
   constructor(
     private readonly userRepository: UserRepository,
-    private readonly jwtService: JwtService,
     private readonly authGenerateTokenService: AuthGenerateTokenService
   ) {}
 
