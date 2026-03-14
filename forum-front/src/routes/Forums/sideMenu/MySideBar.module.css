@@ -1,0 +1,130 @@
+.wrap {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+/* ===== 프로필 카드 ===== */
+.profileCard {
+  background: #F9F9F9;
+  border: 1px solid #e5e7eb;
+  padding: 14px 12px;
+}
+
+.avatarBox {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  margin-bottom: 10px;
+}
+
+.smImgBox {
+  width: 53px;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #eee;
+  flex-shrink: 0;
+}
+
+.smImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+
+.profileText {
+  text-align: center;
+  line-height: 1.2;
+  margin-bottom: 12px;
+}
+
+.nick {
+  font-size: 18px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.name {
+  margin-top: 4px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.handle {
+  margin-top: 2px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.profileActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.actionBtn {
+  border: 1px solid #e5e7eb !important;
+  border-radius: 4px !important;
+  background-color: #F9F9F9 !important;
+  font-size: 11px !important;
+  padding: 4px 3px !important;
+}
+
+.actionBtn:hover {
+  background-color: #FFFFFF!important;
+}
+
+/* ===== 메뉴 ===== */
+.menu {
+  background: #F9F9F9;
+  border: 1px solid #e5e7eb;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 12px 12px;
+  border-top: 1px solid #e5e7eb;
+
+  text-decoration: none;
+  color: inherit;
+}
+
+.menuItem:first-child {
+  border-top: 0;
+}
+
+.menuItem:hover {
+  background: #FFFFFF;
+}
+
+.menuText {
+  font-size: 14px;
+  color: #111827;
+}
+
+.icon {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  background: no-repeat center / contain;
+  flex: 0 0 auto;
+}
+
+.iconList {
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20fill%3D%27none%27%20viewBox%3D%270%200%2024%2024%27%20stroke-width%3D%271.5%27%20stroke%3D%27%233B82F6%27%3E%3Cpath%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%20d%3D%27M8.25%206.75h12M8.25%2012h12m-12%205.25h12M3.75%206.75h.007v.008H3.75V6.75Zm.375%200a.375.375%200%201%201-.75%200%20.375.375%200%200%201%20.75%200ZM3.75%2012h.007v.008H3.75V12Zm.375%200a.375.375%200%201%201-.75%200%20.375.375%200%200%201%20.75%200Zm-.375%205.25h.007v.008H3.75v-.008Zm.375%200a.375.375%200%201%201-.75%200%20.375.375%200%200%201%20.75%200Z%27/%3E%3C/svg%3E");
+}
+
+.iconChat {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%2322C55E'%3E%3Cpath d='M2 10c0-4.418 4.03-8 9-8s9 3.582 9 8-4.03 8-9 8a10.3 10.3 0 01-4.12-.82L2 18l1.22-3.04A7.76 7.76 0 012 10zm5-1a1 1 0 100 2h6a1 1 0 100-2H7zm0 4a1 1 0 100 2h3a1 1 0 100-2H7z'/%3E%3C/svg%3E");
+}
+
+.iconStar {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23F59E0B'%3E%3Cpath d='M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.97a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.377 2.455a1 1 0 00-.363 1.118l1.286 3.97c.3.921-.755 1.688-1.538 1.118l-3.377-2.455a1 1 0 00-1.176 0l-3.377 2.455c-.783.57-1.838-.197-1.538-1.118l1.286-3.97a1 1 0 00-.363-1.118L1.237 9.397c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.099-3.97z'/%3E%3C/svg%3E");
+}
+

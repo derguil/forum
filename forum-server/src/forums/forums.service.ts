@@ -1,16 +1,16 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Forum } from '@prisma/client';
 import { CreateForumDto } from './dto/create-forum.dto';
-import { ForumsRepository } from './forums.repository';
+import { ForumRepository } from './forum.repository';
 
 @Injectable()
 export class ForumsService {
-  constructor(private readonly forumsRepository: ForumsRepository) {}
+  constructor(private readonly forumRepository: ForumRepository) {}
 
   async addForum(createForumDto: CreateForumDto, userId: number): Promise<Forum> {
     const { title } = createForumDto
     try {
-      return await this.forumsRepository.createForum({
+      return await this.forumRepository.createForum({
         title,
         user: {
           connect: { id: userId }  // user 관계로 연결
@@ -30,11 +30,11 @@ export class ForumsService {
   }
 
   async getForums(): Promise<Forum[]> {
-    return await this.forumsRepository.findForums()
+    return await this.forumRepository.findForums()
   }
 
   async getForumById(forumId: number): Promise<Forum> {
-    const forum = await this.forumsRepository.findByForumId(forumId);
+    const forum = await this.forumRepository.findByForumId(forumId);
     if (!forum) {
       throw new NotFoundException('Forum not found');
     }

@@ -3,11 +3,11 @@ import { PrismaModule } from '../infra/prisma/prisma.module';
 import { AuthModule } from '../auth/auth.module';
 import { ForumsService } from './forums.service';
 import { ForumsController } from './forums.controller';
-import { ForumsRepository } from './forums.repository';
+import { ForumRepository } from './forum.repository';
 
 @Module({
   imports: [PrismaModule, AuthModule],
   controllers: [ForumsController],
-  providers: [ForumsService, ForumsRepository],
+  providers: [ForumsService, ForumRepository],
 })
 export class ForumsModule {}

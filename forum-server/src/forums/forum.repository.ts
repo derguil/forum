@@ -1,20 +1,20 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../infra/prisma/prisma.service';
+import { Injectable } from '@nestjs/common';
 import { Forum, Prisma } from '@prisma/client';
+import { PrismaService } from '../infra/prisma/prisma.service';
 
 const forumSelect = {
   id: true,
   userId: true,
   title: true,
   createdAt: true,
-} satisfies Prisma.ForumSelect
+} satisfies Prisma.ForumSelect;
 
 type ForumListItem = Prisma.ForumGetPayload<{
   select: typeof forumSelect;
 }>;
 
 @Injectable()
-export class ForumsRepository {
+export class ForumRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   createForum(data: Prisma.ForumCreateInput): Promise<ForumListItem> {

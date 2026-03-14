@@ -16,11 +16,16 @@ export class S3clientService {
     }
     this.bucket = bucket;
   }
+
+  private getPublicUrl(key: string): string {
+    return `https://${this.bucket}.s3.amazonaws.com/${key}`;
+  }
+
   /**
    * 다중 파일 업로드 처리
    * Promise.all을 사용하여 여러 파일을 병렬로 업로드
    */
-  async uploadFiles(files: Express.Multer.File[], userId: string) {
+  async uploadFiles(files: Express.Multer.File[], userId: number) {
     const uploadedFiles = await Promise.all(
       files.map(async (file) => {
         const ext = file.originalname.split('.').pop();
@@ -36,6 +41,7 @@ export class S3clientService {
         return {
           originalname: file.originalname,
           key,
+          url: this.getPublicUrl(key),
           size: file.size,
           type: file.mimetype,
         };
@@ -67,17 +73,5 @@ export class S3clientService {
       success: true,
       deletedKeys: keys,
     };
-  }
-  /**
-   * 다중 파일 수정 처리 (기존 파일 삭제 후 새 파일 업로드)
-   * Promise.all을 사용하여 병렬로 처리
-   */
-  async updateFiles(
-    files: Express.Multer.File[],
-    oldKeys: string[],
-    userId: string,
-  ) {
-    await this.deleteFiles(oldKeys);
-    return this.uploadFiles(files, userId);
   }
 }

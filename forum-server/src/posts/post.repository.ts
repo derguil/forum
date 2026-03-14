@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../infra/prisma/prisma.service';
 import { Prisma } from '@prisma/client';
+import { PrismaService } from '../infra/prisma/prisma.service';
 
 const postSelect = {
   id: true,
@@ -15,14 +15,28 @@ const postSelect = {
   updatedAt: true,
   isDeleted: true,
   deletedAt: true,
-} satisfies Prisma.PostSelect
+  images: {
+    select: {
+      key: true,
+      url: true,
+    },
+  },
+  user: {
+    select: {
+      id: true,
+      username: true,
+      profileImageKey: true,
+      profileImageUrl: true,
+    },
+  },
+} satisfies Prisma.PostSelect;
 
 type PostListItem = Prisma.PostGetPayload<{
   select: typeof postSelect;
 }>;
 
 @Injectable()
-export class PostsRepository {
+export class PostRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   createPost(data: Prisma.PostCreateInput): Promise<PostListItem> {
@@ -61,7 +75,8 @@ export class PostsRepository {
     return this.prisma.post.update({
       where: { id: postId },
       data: {
-        isDeleted: true
+        isDeleted: true,
+        deletedAt: new Date(),
       },
       select: postSelect,
     });
